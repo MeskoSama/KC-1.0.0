@@ -29,6 +29,9 @@ JWT_ALGORITHM = "HS256"
 # Stripe
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
 
+# Admin users (can be enhanced with proper role system)
+ADMIN_USERNAMES = ["TestMiner"]  # Add admin usernames here
+
 # Create the main app without a prefix
 app = FastAPI()
 
@@ -45,21 +48,37 @@ SERVER_CODES = {
     "90154": "KKD"
 }
 
-# Currency purchase rates (USD to in-game currency)
-CURRENCY_RATES = {
-    "NIM": 4081.63,  # 10,000 NIM = $2.45
-    "GRP": 4081.63,
-    "VDD": 4081.63,
-    "KKD": 4081.63
+# Currency exchange rates (base: GRP)
+# 1 GRP = X other currency
+DEFAULT_CURRENCY_RATES = {
+    "GRP_TO_NIM": 1.68700,
+    "GRP_TO_VDD": 2.36666,
+    "GRP_TO_KKD": 2.61455,
+    "GRP_TO_USD": 0.000245  # 1 GRP = $0.000245 (or ~4081.63 GRP = $1)
 }
 
 # Rank prices
 RANK_PRICES = {
-    "Germania Empire": 3.00,
+    "Germania Empire CITIZENSHIP": 3.00,
     "FIP": 1.00,
     "VIP": 3.00,
     "WIP": 7.50
 }
+
+async def get_currency_rates():
+    """Get currency rates from database or use defaults"""
+    rates = await db.currency_rates.find_one({"id": "current_rates"}, {"_id": 0})
+    if rates:
+        return rates.get("rates", DEFAULT_CURRENCY_RATES)
+    return DEFAULT_CURRENCY_RATES
+
+async def update_currency_rates(new_rates: Dict[str, float]):
+    """Update currency rates in database"""
+    await db.currency_rates.update_one(
+        {"id": "current_rates"},
+        {"$set": {"rates": new_rates, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
 
 # Models
 class User(BaseModel):
@@ -74,6 +93,7 @@ class User(BaseModel):
     owned_houses: List[str] = Field(default_factory=list)
     total_spent: float = 0.0
     total_transactions: int = 0
+    is_admin: bool = False
     created_at: str
 
 class UserRegister(BaseModel):
@@ -141,6 +161,12 @@ class CheckoutRequest(BaseModel):
     currency_type: Optional[str] = None  # For currency purchases
     quantity: Optional[float] = 1.0
 
+class CurrencyRatesUpdate(BaseModel):
+    GRP_TO_NIM: float
+    GRP_TO_VDD: float
+    GRP_TO_KKD: float
+    GRP_TO_USD: float
+
 # Utility Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -148,10 +174,11 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-def create_jwt_token(user_id: str, username: str) -> str:
+def create_jwt_token(user_id: str, username: str, is_admin: bool = False) -> str:
     payload = {
         "user_id": user_id,
         "username": username,
+        "is_admin": is_admin,
         "exp": datetime.now(timezone.utc) + timedelta(days=30)
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -169,6 +196,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    user = await get_current_user(credentials)
+    if not user.get("is_admin", False):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
 # Auth Routes
 @api_router.post("/auth/register")
 async def register(data: UserRegister):
@@ -182,16 +215,19 @@ async def register(data: UserRegister):
         raise HTTPException(status_code=400, detail="Username already exists")
     
     currency_type = SERVER_CODES[data.server_code]
+    is_admin = data.minecraft_username in ADMIN_USERNAMES
+    
     user = User(
         minecraft_username=data.minecraft_username,
         password_hash=hash_password(data.password),
         server_code=data.server_code,
         currency_type=currency_type,
+        is_admin=is_admin,
         created_at=datetime.now(timezone.utc).isoformat()
     )
     
     await db.users.insert_one(user.model_dump())
-    token = create_jwt_token(user.id, user.minecraft_username)
+    token = create_jwt_token(user.id, user.minecraft_username, is_admin)
     
     return {
         "message": "User registered successfully",
@@ -200,7 +236,8 @@ async def register(data: UserRegister):
             "id": user.id,
             "username": user.minecraft_username,
             "currency_type": user.currency_type,
-            "balances": user.balances
+            "balances": user.balances,
+            "is_admin": is_admin
         }
     }
 
@@ -216,7 +253,12 @@ async def login(data: UserLogin):
     if not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    token = create_jwt_token(user["id"], user["minecraft_username"])
+    # Update admin status if username is in admin list
+    is_admin = user.get("is_admin", False) or data.minecraft_username in ADMIN_USERNAMES
+    if is_admin and not user.get("is_admin", False):
+        await db.users.update_one({"id": user["id"]}, {"$set": {"is_admin": True}})
+    
+    token = create_jwt_token(user["id"], user["minecraft_username"], is_admin)
     
     return {
         "message": "Login successful",
@@ -227,7 +269,8 @@ async def login(data: UserLogin):
             "currency_type": user["currency_type"],
             "balances": user["balances"],
             "owned_ranks": user.get("owned_ranks", []),
-            "owned_houses": user.get("owned_houses", [])
+            "owned_houses": user.get("owned_houses", []),
+            "is_admin": is_admin
         }
     }
 
@@ -241,13 +284,27 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "owned_ranks": current_user.get("owned_ranks", []),
         "owned_houses": current_user.get("owned_houses", []),
         "total_spent": current_user.get("total_spent", 0),
-        "total_transactions": current_user.get("total_transactions", 0)
+        "total_transactions": current_user.get("total_transactions", 0),
+        "is_admin": current_user.get("is_admin", False)
     }
+
+# Admin Routes
+@api_router.get("/admin/currency-rates")
+async def get_admin_currency_rates(current_user: dict = Depends(get_admin_user)):
+    rates = await get_currency_rates()
+    return {"rates": rates}
+
+@api_router.put("/admin/currency-rates")
+async def update_admin_currency_rates(rates: CurrencyRatesUpdate, current_user: dict = Depends(get_admin_user)):
+    new_rates = rates.model_dump()
+    await update_currency_rates(new_rates)
+    return {"message": "Currency rates updated successfully", "rates": new_rates}
 
 # Currency Purchase Routes
 @api_router.get("/marketplace/currency-rates")
-async def get_currency_rates():
-    return {"rates": CURRENCY_RATES}
+async def get_marketplace_currency_rates():
+    rates = await get_currency_rates()
+    return {"rates": rates}
 
 @api_router.get("/marketplace/rank-prices")
 async def get_rank_prices():
@@ -277,14 +334,12 @@ async def get_houses(status: Optional[str] = "available"):
     return {"houses": houses}
 
 @api_router.get("/houses/pending")
-async def get_pending_houses(current_user: dict = Depends(get_current_user)):
-    # Simple admin check - you can enhance this
+async def get_pending_houses(current_user: dict = Depends(get_admin_user)):
     houses = await db.houses.find({"admin_approved": False}, {"_id": 0}).to_list(1000)
     return {"houses": houses}
 
 @api_router.post("/houses/{house_id}/approve")
-async def approve_house(house_id: str, current_user: dict = Depends(get_current_user)):
-    # Simple admin action - enhance with proper admin roles
+async def approve_house(house_id: str, current_user: dict = Depends(get_admin_user)):
     result = await db.houses.update_one(
         {"id": house_id},
         {"$set": {"admin_approved": True, "status": "available"}}
@@ -432,6 +487,7 @@ async def create_checkout_session(request: Request, checkout_req: CheckoutReques
         success_url = f"{origin}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url = f"{origin}/marketplace"
         
+        rates = await get_currency_rates()
         amount = 0.0
         metadata = {
             "user_id": current_user["id"],
@@ -442,11 +498,17 @@ async def create_checkout_session(request: Request, checkout_req: CheckoutReques
         
         if checkout_req.package_type == "currency":
             # Calculate amount based on currency rate
-            if checkout_req.currency_type not in CURRENCY_RATES:
+            if checkout_req.currency_type not in ["NIM", "GRP", "VDD", "KKD"]:
                 raise HTTPException(status_code=400, detail="Invalid currency type")
             
-            rate = CURRENCY_RATES[checkout_req.currency_type]
-            amount = checkout_req.quantity / rate  # quantity in in-game currency to USD
+            # Convert to GRP first, then to USD
+            grp_amount = checkout_req.quantity
+            if checkout_req.currency_type != "GRP":
+                # Convert from other currency to GRP
+                rate_key = f"GRP_TO_{checkout_req.currency_type}"
+                grp_amount = checkout_req.quantity / rates[rate_key]
+            
+            amount = grp_amount * rates["GRP_TO_USD"]
             metadata["currency_type"] = checkout_req.currency_type
             metadata["quantity"] = str(checkout_req.quantity)
             
