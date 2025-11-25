@@ -455,13 +455,14 @@ async def create_checkout_session(request: Request, checkout_req: CheckoutReques
                 raise HTTPException(status_code=400, detail="Invalid rank")
             amount = RANK_PRICES[checkout_req.package_id]
         
-        # Create checkout session
+        # Create checkout session - ONLY VISA/MASTERCARD cards
         checkout_request = CheckoutSessionRequest(
             amount=amount,
             currency="usd",
             success_url=success_url,
             cancel_url=cancel_url,
-            metadata=metadata
+            metadata=metadata,
+            payment_methods=['card']  # Only card payments (VISA/MASTERCARD)
         )
         
         session = await stripe_checkout.create_checkout_session(checkout_request)
