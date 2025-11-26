@@ -477,7 +477,7 @@ async def delete_house(house_id: str, current_user: dict = Depends(get_admin_use
     return {"message": "House deleted"}
 
 @api_router.post("/houses/{house_id}/buy")
-async def buy_house(house_id: str, payment_type: str, current_user: dict = Depends(get_current_user)):
+async def buy_house(house_id: str, payment_type: str, payment_currency: Optional[str] = None, current_user: dict = Depends(get_current_user)):
     house = await db.houses.find_one({"id": house_id}, {"_id": 0})
     if not house:
         raise HTTPException(status_code=404, detail="House not found")
@@ -489,26 +489,56 @@ async def buy_house(house_id: str, payment_type: str, current_user: dict = Depen
         if not house.get("price_currency"):
             raise HTTPException(status_code=400, detail="Currency payment not available")
         
-        user_currency = current_user["currency_type"]
-        required_amount = house["price_currency"].get(user_currency, 0)
+        # Allow payment with any currency
+        if not payment_currency or payment_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+            payment_currency = current_user["currency_type"]
         
-        if current_user["balances"][user_currency] < required_amount:
+        required_amount = house["price_currency"].get(payment_currency, 0)
+        
+        if current_user["balances"][payment_currency] < required_amount:
             raise HTTPException(status_code=400, detail="Insufficient balance")
+        
+        # Create title deed
+        title_deed = TitleDeed(
+            house_id=house_id,
+            house_name=house["name"],
+            owner_id=current_user["id"],
+            owner_username=current_user["minecraft_username"],
+            previous_owner_id=house.get("owner_id"),
+            previous_owner_username=house.get("owner_username"),
+            purchase_price=required_amount,
+            purchase_currency=payment_currency,
+            issued_date=datetime.now(timezone.utc).isoformat(),
+            location=house["location"]
+        )
+        
+        await db.title_deeds.insert_one(title_deed.model_dump())
         
         await db.users.update_one(
             {"id": current_user["id"]},
             {
-                "$inc": {f"balances.{user_currency}": -required_amount, "total_transactions": 1},
+                "$inc": {f"balances.{payment_currency}": -required_amount, "total_transactions": 1},
                 "$push": {"owned_houses": house_id}
             }
         )
         
         await db.houses.update_one(
             {"id": house_id},
-            {"$set": {"status": "sold", "sold_at": datetime.now(timezone.utc).isoformat()}}
+            {
+                "$set": {
+                    "status": "sold",
+                    "sold_at": datetime.now(timezone.utc).isoformat(),
+                    "owner_id": current_user["id"],
+                    "owner_username": current_user["minecraft_username"],
+                    "title_deed_id": title_deed.id
+                }
+            }
         )
         
-        return {"message": "House purchased successfully with in-game currency"}
+        return {
+            "message": "House purchased successfully! Title deed issued.",
+            "title_deed_id": title_deed.id
+        }
     
     return {"message": "USD payment requires Stripe checkout", "amount": house.get("price_usd", 0)}
 
