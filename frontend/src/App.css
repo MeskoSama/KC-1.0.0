@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;700;900&family=Space+Grotesk:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;900&family=Space+Grotesk:wght@400;600;700&display=swap');
 
 * {
   margin: 0;
@@ -7,8 +7,8 @@
 }
 
 body {
-  font-family: 'Chivo', sans-serif;
-  background-color: #020617;
+  font-family: 'Exo 2', sans-serif;
+  background-color: #0a0014;
   color: #f1f5f9;
   overflow-x: hidden;
 }
@@ -17,13 +17,13 @@ body {
   min-height: 100vh;
 }
 
-/* Minecraft-themed styles */
-.minecraft-bg {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+/* KapitalistCraft theme - Purple-Red-White */
+.kapitalist-bg {
+  background: linear-gradient(135deg, #1a0b2e 0%, #2d1444 50%, #3d1a5c 100%);
   position: relative;
 }
 
-.minecraft-bg::before {
+.kapitalist-bg::before {
   content: '';
   position: absolute;
   top: 0;
@@ -31,8 +31,8 @@ body {
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(139, 69, 250, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(220, 38, 127, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
 }
@@ -44,31 +44,33 @@ body {
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(26, 11, 46, 0.7);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(139, 69, 250, 0.3);
   border-radius: 12px;
 }
 
 .glow-text {
-  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+  text-shadow: 0 0 20px rgba(139, 69, 250, 0.8);
 }
 
-.btn-minecraft {
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-  border: 3px solid #065f46;
-  box-shadow: 0 4px 0 #064e3b;
+.btn-kapitalist {
+  background: linear-gradient(180deg, #8b45fa 0%, #dc267f 100%);
+  border: 3px solid #6a1b9a;
+  box-shadow: 0 4px 0 #4a148c, 0 0 20px rgba(139, 69, 250, 0.5);
   transition: transform 0.1s, box-shadow 0.1s;
+  font-weight: bold;
+  color: white;
 }
 
-.btn-minecraft:hover {
+.btn-kapitalist:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #064e3b;
+  box-shadow: 0 6px 0 #4a148c, 0 0 30px rgba(139, 69, 250, 0.7);
 }
 
-.btn-minecraft:active {
+.btn-kapitalist:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #064e3b;
+  box-shadow: 0 2px 0 #4a148c, 0 0 15px rgba(139, 69, 250, 0.5);
 }
 
 .currency-badge {
@@ -76,16 +78,16 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(139, 69, 250, 0.15);
+  border: 1px solid rgba(139, 69, 250, 0.4);
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.95rem;
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 78, 59, 0.1) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: linear-gradient(135deg, rgba(139, 69, 250, 0.1) 0%, rgba(220, 38, 127, 0.1) 100%);
+  border: 1px solid rgba(139, 69, 250, 0.3);
   border-radius: 12px;
   padding: 1.5rem;
   transition: transform 0.3s, border-color 0.3s;
@@ -93,7 +95,7 @@ body {
 
 .stat-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(16, 185, 129, 0.5);
+  border-color: rgba(139, 69, 250, 0.6);
 }
 
 /* Animations */
@@ -112,10 +114,10 @@ body {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 20px rgba(139, 69, 250, 0.4);
   }
   50% {
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 40px rgba(139, 69, 250, 0.9);
   }
 }
 
@@ -129,14 +131,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #1a0b2e;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #10b981;
+  background: linear-gradient(180deg, #8b45fa 0%, #dc267f 100%);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+  background: linear-gradient(180deg, #9d5cff 0%, #e63890 100%);
 }
