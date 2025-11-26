@@ -727,6 +727,7 @@ async def create_checkout_session(request: Request, checkout_req: CheckoutReques
         }
         
         if checkout_req.package_type == "currency":
+            # Allow buying any currency, not just user's server currency
             if checkout_req.currency_type not in ["NIM", "GRP", "VDD", "KKD"]:
                 raise HTTPException(status_code=400, detail="Invalid currency type")
             
@@ -738,6 +739,7 @@ async def create_checkout_session(request: Request, checkout_req: CheckoutReques
             amount = grp_amount * rates["GRP_TO_USD"]
             metadata["currency_type"] = checkout_req.currency_type
             metadata["quantity"] = str(checkout_req.quantity)
+            metadata["user_server_currency"] = current_user["currency_type"]
             
         elif checkout_req.package_type == "rank":
             if checkout_req.package_id not in RANK_PRICES:
