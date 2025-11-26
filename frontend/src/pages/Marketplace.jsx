@@ -14,6 +14,7 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
   const [currencyRates, setCurrencyRates] = useState({});
   const [rankPrices, setRankPrices] = useState({});
   const [currencyAmount, setCurrencyAmount] = useState(10000);
+  const [selectedCurrency, setSelectedCurrency] = useState('NIM');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
