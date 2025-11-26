@@ -50,7 +50,7 @@ const LandingPage = () => {
             </div>
           </div>
           <h1 className="text-6xl md:text-7xl font-black mb-6 tracking-tight">
-            <span className="text-emerald-400 glow-text">PIXEL</span>
+            <span className="text-emerald-400 glow-text">Kapitalist</span>
             <span className="text-slate-100">TRADERS</span>
           </h1>
           <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto font-light">

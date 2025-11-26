@@ -20,7 +20,7 @@ export const Navbar = ({ user, onLogout }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/dashboard" className="text-2xl font-black tracking-tight">
-              <span className="text-emerald-400 glow-text">PIXEL</span>
+              <span className="text-emerald-400 glow-text">Kapitalist</span>
               <span className="text-slate-200">TRADERS</span>
             </Link>
             <div className="hidden md:flex items-center gap-2">

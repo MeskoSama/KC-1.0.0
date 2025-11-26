@@ -68,7 +68,7 @@ const AuthPage = ({ onLogin }) => {
             <Pickaxe size={32} className="text-white" />
           </div>
           <h1 className="text-4xl font-black mb-2">
-            <span className="text-emerald-400 glow-text">PIXEL</span>
+            <span className="text-emerald-400 glow-text">Kapitalist</span>
             <span className="text-slate-100">TRADERS</span>
           </h1>
           <p className="text-slate-400">Enter your Minecraft credentials</p>
