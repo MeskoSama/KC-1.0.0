@@ -613,6 +613,72 @@ async def delete_bounty(bounty_id: str, current_user: dict = Depends(get_admin_u
     
     return {"message": "Bounty deleted"}
 
+# Currency Conversion Routes
+@api_router.post("/currency/convert")
+async def convert_currency(conversion: CurrencyConversion, current_user: dict = Depends(get_current_user)):
+    if conversion.from_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid source currency")
+    if conversion.to_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid target currency")
+    if conversion.from_currency == conversion.to_currency:
+        raise HTTPException(status_code=400, detail="Cannot convert to same currency")
+    if conversion.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    
+    # Check balance
+    if current_user["balances"][conversion.from_currency] < conversion.amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+    
+    # Get exchange rates
+    rates = await get_currency_rates()
+    
+    # Convert to GRP first, then to target currency
+    grp_amount = conversion.amount
+    if conversion.from_currency != "GRP":
+        rate_key = f"GRP_TO_{conversion.from_currency}"
+        grp_amount = conversion.amount / rates[rate_key]
+    
+    # Convert from GRP to target
+    target_amount = grp_amount
+    if conversion.to_currency != "GRP":
+        rate_key = f"GRP_TO_{conversion.to_currency}"
+        target_amount = grp_amount * rates[rate_key]
+    
+    # Update balances
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {
+                f"balances.{conversion.from_currency}": -conversion.amount,
+                f"balances.{conversion.to_currency}": target_amount,
+                "total_transactions": 1
+            }
+        }
+    )
+    
+    return {
+        "message": "Currency converted successfully",
+        "from_amount": conversion.amount,
+        "from_currency": conversion.from_currency,
+        "to_amount": target_amount,
+        "to_currency": conversion.to_currency,
+        "exchange_rate": target_amount / conversion.amount
+    }
+
+@api_router.get("/title-deeds")
+async def get_my_title_deeds(current_user: dict = Depends(get_current_user)):
+    deeds = await db.title_deeds.find({"owner_id": current_user["id"]}, {"_id": 0}).to_list(1000)
+    return {"title_deeds": deeds}
+
+@api_router.get("/title-deeds/{deed_id}")
+async def get_title_deed(deed_id: str, current_user: dict = Depends(get_current_user)):
+    deed = await db.title_deeds.find_one({"id": deed_id}, {"_id": 0})
+    if not deed:
+        raise HTTPException(status_code=404, detail="Title deed not found")
+    if deed["owner_id"] != current_user["id"] and not current_user.get("is_admin", False):
+        raise HTTPException(status_code=403, detail="Not authorized to view this title deed")
+    return deed
+
 # Leaderboard Routes
 @api_router.get("/leaderboard/richest")
 async def get_richest_players(currency: str = "NIM", limit: int = 10):
