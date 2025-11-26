@@ -68,7 +68,7 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
         {
           package_type: 'currency',
           package_id: 'currency_purchase',
-          currency_type: user.currency_type,
+          currency_type: selectedCurrency,
           quantity: parseFloat(currencyAmount)
         },
         {
