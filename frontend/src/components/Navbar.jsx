@@ -9,6 +9,7 @@ export const Navbar = ({ user, onLogout }) => {
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/marketplace', icon: ShoppingCart, label: 'Marketplace' },
+    { path: '/exchange', icon: ArrowRightLeft, label: 'Exchange' },
     { path: '/houses', icon: Building2, label: 'Houses' },
     { path: '/bounties', icon: Target, label: 'Bounties' },
     { path: '/scoreboard', icon: Trophy, label: 'Scoreboard' },
