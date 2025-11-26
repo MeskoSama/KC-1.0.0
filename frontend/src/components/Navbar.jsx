@@ -13,6 +13,10 @@ export const Navbar = ({ user, onLogout }) => {
     { path: '/bounties', icon: Target, label: 'Bounties' },
     { path: '/scoreboard', icon: Trophy, label: 'Scoreboard' },
   ];
+  
+  if (user?.is_admin) {
+    navItems.push({ path: '/admin', icon: Shield, label: 'Admin' });
+  }
 
   return (
     <nav className="glass-card sticky top-0 z-50 mx-4 mt-4 mb-6">
