@@ -132,6 +132,26 @@ class House(BaseModel):
     listed_at: str
     sold_at: Optional[str] = None
     admin_approved: bool = False
+    title_deed_id: Optional[str] = None
+
+class TitleDeed(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    house_id: str
+    house_name: str
+    owner_id: str
+    owner_username: str
+    previous_owner_id: Optional[str] = None
+    previous_owner_username: Optional[str] = None
+    purchase_price: float
+    purchase_currency: str
+    issued_date: str
+    location: str
+
+class CurrencyConversion(BaseModel):
+    from_currency: str
+    to_currency: str
+    amount: float
 
 class HouseListing(BaseModel):
     name: str
