@@ -75,6 +75,7 @@ function App() {
           <Route path="/houses" element={user ? <HousesPage user={user} onLogout={logout} onUpdateUser={checkAuth} /> : <Navigate to="/auth" />} />
           <Route path="/payment-success" element={user ? <PaymentSuccess user={user} onLogout={logout} onUpdateUser={checkAuth} /> : <Navigate to="/auth" />} />
           <Route path="/exchange" element={user ? <CurrencyExchange user={user} onLogout={logout} onUpdateUser={checkAuth} /> : <Navigate to="/auth" />} />
+          <Route path="/title-deeds" element={user ? <TitleDeeds user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/admin" element={user && user.is_admin ? <AdminPanel user={user} onLogout={logout} /> : <Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
