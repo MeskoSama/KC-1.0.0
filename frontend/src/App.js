@@ -11,6 +11,7 @@ import Scoreboard from "./pages/Scoreboard";
 import HousesPage from "./pages/HousesPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import AdminPanel from "./pages/AdminPanel";
+import CurrencyExchange from "./pages/CurrencyExchange";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
