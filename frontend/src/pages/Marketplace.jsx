@@ -103,12 +103,12 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
   };
 
   return (
-    <div className="minecraft-bg min-h-screen pb-12">
+    <div className="kapitalist-bg min-h-screen pb-12">
       <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4">
         <div className="mb-8">
           <h1 className="text-4xl font-black mb-2">
-            <span className="text-emerald-400 glow-text">MARKETPLACE</span>
+            <span className="text-purple-400 glow-text">MARKETPLACE</span>
           </h1>
           <p className="text-slate-400 text-lg">Purchase currency and ranks with VISA/MASTERCARD</p>
         </div>
@@ -127,10 +127,10 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
 
           <TabsContent value="currency" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="glass-card border-emerald-600/20">
+              <Card className="glass-card border-purple-600/20">
                 <CardHeader>
                   <CardTitle className="text-2xl flex items-center gap-2">
-                    <Coins className="text-emerald-400" />
+                    <Coins className="text-purple-400" />
                     Buy {user.currency_type}
                   </CardTitle>
                   <CardDescription>Purchase in-game currency with VISA/MASTERCARD via Stripe</CardDescription>
@@ -151,10 +151,10 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
                     <p className="text-sm text-slate-500">Minimum: 1,000 {user.currency_type}</p>
                   </div>
 
-                  <div className="p-4 bg-emerald-600/10 border border-emerald-600/30 rounded-lg">
+                  <div className="p-4 bg-purple-600/10 border border-purple-600/30 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-slate-400">You get:</span>
-                      <span className="text-2xl font-bold text-emerald-400">
+                      <span className="text-2xl font-bold text-purple-400">
                         {parseFloat(currencyAmount).toLocaleString()} {user.currency_type}
                       </span>
                     </div>
@@ -190,7 +190,7 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
                         key={currency}
                         className={`p-4 rounded-lg ${
                           currency === user.currency_type
-                            ? 'bg-emerald-600/20 border-2 border-emerald-600'
+                            ? 'bg-purple-600/20 border-2 border-purple-600'
                             : 'bg-slate-800/50 border border-slate-700'
                         }`}
                         data-testid={`rate-${currency.toLowerCase()}`}
@@ -203,7 +203,7 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
                             </div>
                           </div>
                           {currency === user.currency_type && (
-                            <div className="text-xs font-bold text-emerald-400 bg-emerald-600/20 px-3 py-1 rounded">
+                            <div className="text-xs font-bold text-purple-400 bg-purple-600/20 px-3 py-1 rounded">
                               YOUR CURRENCY
                             </div>
                           )}
@@ -225,13 +225,13 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
                     key={rankName}
                     className={`glass-card ${
                       isOwned ? 'border-amber-600' : 'border-slate-700'
-                    } hover:border-emerald-600/50 transition-all`}
+                    } hover:border-purple-600/50 transition-all`}
                     data-testid={`rank-${rankName.toLowerCase().replace(' ', '-')}`}
                   >
                     <CardHeader>
                       <Crown className={isOwned ? 'text-amber-400' : 'text-slate-400'} size={32} />
                       <CardTitle className="text-xl">{rankName}</CardTitle>
-                      <CardDescription className="text-2xl font-bold text-emerald-400">
+                      <CardDescription className="text-2xl font-bold text-purple-400">
                         ${price.toFixed(2)} USD
                       </CardDescription>
                     </CardHeader>

@@ -92,7 +92,7 @@ const BountyBoard = ({ user, onLogout, onUpdateUser }) => {
   const questBounties = bounties.filter(b => b.bounty_type === 'quest');
 
   return (
-    <div className="minecraft-bg min-h-screen pb-12">
+    <div className="kapitalist-bg min-h-screen pb-12">
       <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4">
         <div className="mb-8 flex items-center justify-between">
@@ -109,7 +109,7 @@ const BountyBoard = ({ user, onLogout, onUpdateUser }) => {
                 Create Bounty
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-emerald-600/30 max-w-2xl">
+            <DialogContent className="bg-slate-900 border-purple-600/30 max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="text-2xl">Create New Bounty</DialogTitle>
                 <DialogDescription>Set up a bounty for other players to complete</DialogDescription>
@@ -248,11 +248,11 @@ const BountyBoard = ({ user, onLogout, onUpdateUser }) => {
                     )}
                     <div className="text-sm">
                       <span className="text-slate-500">Posted by: </span>
-                      <span className="font-bold text-emerald-400">{bounty.creator_username}</span>
+                      <span className="font-bold text-purple-400">{bounty.creator_username}</span>
                     </div>
-                    <div className="p-3 bg-emerald-600/10 border border-emerald-600/30 rounded-lg">
+                    <div className="p-3 bg-purple-600/10 border border-purple-600/30 rounded-lg">
                       <div className="text-sm text-slate-400 mb-1">Reward</div>
-                      <div className="text-2xl font-bold text-emerald-400">
+                      <div className="text-2xl font-bold text-purple-400">
                         {bounty.reward_amount.toLocaleString()} {bounty.reward_currency}
                       </div>
                     </div>
@@ -306,11 +306,11 @@ const BountyBoard = ({ user, onLogout, onUpdateUser }) => {
                     </div>
                     <div className="text-sm">
                       <span className="text-slate-500">Posted by: </span>
-                      <span className="font-bold text-emerald-400">{bounty.creator_username}</span>
+                      <span className="font-bold text-purple-400">{bounty.creator_username}</span>
                     </div>
-                    <div className="p-3 bg-emerald-600/10 border border-emerald-600/30 rounded-lg">
+                    <div className="p-3 bg-purple-600/10 border border-purple-600/30 rounded-lg">
                       <div className="text-sm text-slate-400 mb-1">Reward</div>
-                      <div className="text-2xl font-bold text-emerald-400">
+                      <div className="text-2xl font-bold text-purple-400">
                         {bounty.reward_amount.toLocaleString()} {bounty.reward_currency}
                       </div>
                     </div>
@@ -329,7 +329,7 @@ const BountyBoard = ({ user, onLogout, onUpdateUser }) => {
           <TabsContent value="quest" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {questBounties.map((bounty) => (
-                <Card key={bounty.id} className="glass-card border-emerald-600/20">
+                <Card key={bounty.id} className="glass-card border-purple-600/20">
                   <CardHeader>
                     <Badge className="mb-2 w-fit" variant="default">
                       <Trophy size={14} className="mr-1" />
@@ -341,11 +341,11 @@ const BountyBoard = ({ user, onLogout, onUpdateUser }) => {
                   <CardContent className="space-y-3">
                     <div className="text-sm">
                       <span className="text-slate-500">Posted by: </span>
-                      <span className="font-bold text-emerald-400">{bounty.creator_username}</span>
+                      <span className="font-bold text-purple-400">{bounty.creator_username}</span>
                     </div>
-                    <div className="p-3 bg-emerald-600/10 border border-emerald-600/30 rounded-lg">
+                    <div className="p-3 bg-purple-600/10 border border-purple-600/30 rounded-lg">
                       <div className="text-sm text-slate-400 mb-1">Reward</div>
-                      <div className="text-2xl font-bold text-emerald-400">
+                      <div className="text-2xl font-bold text-purple-400">
                         {bounty.reward_amount.toLocaleString()} {bounty.reward_currency}
                       </div>
                     </div>

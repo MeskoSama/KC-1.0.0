@@ -56,10 +56,10 @@ const PaymentSuccess = ({ user, onLogout, onUpdateUser }) => {
   };
 
   return (
-    <div className="minecraft-bg min-h-screen pb-12">
+    <div className="kapitalist-bg min-h-screen pb-12">
       <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4 flex items-center justify-center min-h-[70vh]">
-        <Card className="glass-card border-emerald-600/20 max-w-md w-full">
+        <Card className="glass-card border-purple-600/20 max-w-md w-full">
           <CardHeader>
             <CardTitle className="text-center text-2xl">
               {status === 'checking' && 'Verifying Payment...'}
@@ -72,14 +72,14 @@ const PaymentSuccess = ({ user, onLogout, onUpdateUser }) => {
             <div className="flex justify-center">
               {status === 'checking' && (
                 <div className="text-center">
-                  <Loader2 size={64} className="text-emerald-400 animate-spin mx-auto mb-4" />
+                  <Loader2 size={64} className="text-purple-400 animate-spin mx-auto mb-4" />
                   <p className="text-slate-400">Checking payment status...</p>
                   <p className="text-sm text-slate-500 mt-2">Attempt {attempts + 1} of 5</p>
                 </div>
               )}
               {status === 'success' && (
                 <div className="text-center">
-                  <CheckCircle size={64} className="text-emerald-400 mx-auto mb-4" />
+                  <CheckCircle size={64} className="text-purple-400 mx-auto mb-4" />
                   <p className="text-slate-400">Your payment has been processed successfully!</p>
                   <p className="text-sm text-slate-500 mt-2">Your balance has been updated.</p>
                 </div>
@@ -108,7 +108,7 @@ const PaymentSuccess = ({ user, onLogout, onUpdateUser }) => {
                 <Button
                   onClick={() => navigate('/marketplace')}
                   variant="outline"
-                  className="flex-1 border-emerald-600 hover:bg-emerald-950"
+                  className="flex-1 border-purple-600 hover:bg-purple-950"
                   data-testid="return-marketplace-button"
                 >
                   Back to Marketplace

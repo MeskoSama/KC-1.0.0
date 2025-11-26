@@ -55,7 +55,7 @@ const Scoreboard = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="minecraft-bg min-h-screen pb-12">
+    <div className="kapitalist-bg min-h-screen pb-12">
       <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4">
         <div className="mb-8">
@@ -115,14 +115,14 @@ const Scoreboard = ({ user, onLogout }) => {
                         key={index}
                         className={`p-4 rounded-lg border-2 flex items-center justify-between ${
                           isCurrentUser
-                            ? 'bg-emerald-600/20 border-emerald-600'
+                            ? 'bg-purple-600/20 border-purple-600'
                             : getMedalBg(rank)
                         }`}
                         data-testid={`richest-${index}`}
                       >
                         <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-2xl ${
-                            isCurrentUser ? 'bg-emerald-600' : rank <= 3 ? getMedalBg(rank) : 'bg-slate-700'
+                            isCurrentUser ? 'bg-purple-600' : rank <= 3 ? getMedalBg(rank) : 'bg-slate-700'
                           }`}>
                             <span className={isCurrentUser ? 'text-white' : getMedalColor(rank)}>
                               {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
@@ -130,7 +130,7 @@ const Scoreboard = ({ user, onLogout }) => {
                           </div>
                           <div>
                             <div className={`font-bold text-lg ${
-                              isCurrentUser ? 'text-emerald-400' : 'text-slate-200'
+                              isCurrentUser ? 'text-purple-400' : 'text-slate-200'
                             }`}>
                               {player.minecraft_username}
                               {isCurrentUser && <span className="ml-2 text-xs">(You)</span>}
@@ -171,14 +171,14 @@ const Scoreboard = ({ user, onLogout }) => {
                         key={index}
                         className={`p-4 rounded-lg border-2 flex items-center justify-between ${
                           isCurrentUser
-                            ? 'bg-emerald-600/20 border-emerald-600'
+                            ? 'bg-purple-600/20 border-purple-600'
                             : getMedalBg(rank)
                         }`}
                         data-testid={`trader-${index}`}
                       >
                         <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-2xl ${
-                            isCurrentUser ? 'bg-emerald-600' : rank <= 3 ? getMedalBg(rank) : 'bg-slate-700'
+                            isCurrentUser ? 'bg-purple-600' : rank <= 3 ? getMedalBg(rank) : 'bg-slate-700'
                           }`}>
                             <span className={isCurrentUser ? 'text-white' : getMedalColor(rank)}>
                               {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
@@ -186,7 +186,7 @@ const Scoreboard = ({ user, onLogout }) => {
                           </div>
                           <div>
                             <div className={`font-bold text-lg ${
-                              isCurrentUser ? 'text-emerald-400' : 'text-slate-200'
+                              isCurrentUser ? 'text-purple-400' : 'text-slate-200'
                             }`}>
                               {player.minecraft_username}
                               {isCurrentUser && <span className="ml-2 text-xs">(You)</span>}
@@ -229,14 +229,14 @@ const Scoreboard = ({ user, onLogout }) => {
                         key={index}
                         className={`p-4 rounded-lg border-2 flex items-center justify-between ${
                           isCurrentUser
-                            ? 'bg-emerald-600/20 border-emerald-600'
+                            ? 'bg-purple-600/20 border-purple-600'
                             : getMedalBg(rank)
                         }`}
                         data-testid={`house-owner-${index}`}
                       >
                         <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-2xl ${
-                            isCurrentUser ? 'bg-emerald-600' : rank <= 3 ? getMedalBg(rank) : 'bg-slate-700'
+                            isCurrentUser ? 'bg-purple-600' : rank <= 3 ? getMedalBg(rank) : 'bg-slate-700'
                           }`}>
                             <span className={isCurrentUser ? 'text-white' : getMedalColor(rank)}>
                               {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
@@ -244,7 +244,7 @@ const Scoreboard = ({ user, onLogout }) => {
                           </div>
                           <div>
                             <div className={`font-bold text-lg ${
-                              isCurrentUser ? 'text-emerald-400' : 'text-slate-200'
+                              isCurrentUser ? 'text-purple-400' : 'text-slate-200'
                             }`}>
                               {player.minecraft_username}
                               {isCurrentUser && <span className="ml-2 text-xs">(You)</span>}

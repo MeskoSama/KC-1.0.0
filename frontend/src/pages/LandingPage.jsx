@@ -40,17 +40,17 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="minecraft-bg min-h-screen">
+    <div className="kapitalist-bg min-h-screen">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-20">
         <div className="text-center mb-16">
           <div className="inline-block mb-6 floating">
-            <div className="w-24 h-24 bg-emerald-600 rounded-lg pulse-glow flex items-center justify-center">
+            <div className="w-24 h-24 bg-purple-600 rounded-lg pulse-glow flex items-center justify-center">
               <Sparkles size={48} className="text-white" />
             </div>
           </div>
           <h1 className="text-6xl md:text-7xl font-black mb-6 tracking-tight">
-            <span className="text-emerald-400 glow-text">Kapitalist</span>
+            <span className="text-purple-400 glow-text">Kapitalist</span>
             <span className="text-slate-100">TRADERS</span>
           </h1>
           <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto font-light">
@@ -73,8 +73,8 @@ const LandingPage = () => {
             return (
               <div key={index} className="stat-card group" data-testid={`feature-${index}`}>
                 <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-emerald-600/20 flex items-center justify-center group-hover:bg-emerald-600/40 transition-colors">
-                    <Icon size={28} className="text-emerald-400" />
+                  <div className="w-14 h-14 rounded-lg bg-purple-600/20 flex items-center justify-center group-hover:bg-purple-600/40 transition-colors">
+                    <Icon size={28} className="text-purple-400" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-bold mb-2 text-slate-100">{feature.title}</h3>
@@ -88,7 +88,7 @@ const LandingPage = () => {
 
         {/* Currencies Section */}
         <div className="mt-20 glass-card p-8 max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8 text-emerald-400">Server Currencies</h2>
+          <h2 className="text-3xl font-bold text-center mb-8 text-purple-400">Server Currencies</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { name: 'NIM', code: '10194', color: 'emerald' },

@@ -55,13 +55,13 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
   ];
 
   return (
-    <div className="minecraft-bg min-h-screen pb-12">
+    <div className="kapitalist-bg min-h-screen pb-12">
       <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4">
         <div className="mb-8">
           <h1 className="text-4xl font-black mb-2">
             <span className="text-slate-200">Welcome back, </span>
-            <span className="text-emerald-400 glow-text" data-testid="dashboard-username">{user.username}</span>
+            <span className="text-purple-400 glow-text" data-testid="dashboard-username">{user.username}</span>
           </h1>
           <p className="text-slate-400 text-lg">Here's your trading overview</p>
         </div>
@@ -83,7 +83,7 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
         </div>
 
         {/* All Balances */}
-        <Card className="glass-card border-emerald-600/20 mb-8">
+        <Card className="glass-card border-purple-600/20 mb-8">
           <CardHeader>
             <CardTitle className="text-2xl">All Currency Balances</CardTitle>
             <CardDescription>Your balances across all server currencies</CardDescription>
@@ -95,15 +95,15 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
                   key={currency}
                   className={`p-4 rounded-lg ${
                     currency === user.currency_type
-                      ? 'bg-emerald-600/20 border-2 border-emerald-600'
+                      ? 'bg-purple-600/20 border-2 border-purple-600'
                       : 'bg-slate-800/50 border border-slate-700'
                   }`}
                   data-testid={`balance-${currency.toLowerCase()}`}
                 >
                   <div className="text-sm text-slate-400 mb-1">{currency}</div>
-                  <div className="text-2xl font-bold text-emerald-400">{balance.toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-purple-400">{balance.toFixed(2)}</div>
                   {currency === user.currency_type && (
-                    <div className="text-xs text-emerald-500 mt-1">Primary</div>
+                    <div className="text-xs text-purple-500 mt-1">Primary</div>
                   )}
                 </div>
               ))}
@@ -134,7 +134,7 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
         )}
 
         {/* Quick Actions */}
-        <Card className="glass-card border-emerald-600/20">
+        <Card className="glass-card border-purple-600/20">
           <CardHeader>
             <CardTitle className="text-2xl">Quick Actions</CardTitle>
             <CardDescription>What would you like to do?</CardDescription>
@@ -143,10 +143,10 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <a
                 href="/marketplace"
-                className="p-6 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 rounded-lg transition-all"
+                className="p-6 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-600/30 rounded-lg transition-all"
                 data-testid="quick-action-marketplace"
               >
-                <h3 className="text-lg font-bold text-emerald-400 mb-2">Buy Currency</h3>
+                <h3 className="text-lg font-bold text-purple-400 mb-2">Buy Currency</h3>
                 <p className="text-slate-400 text-sm">Purchase in-game currency with VISA/MASTERCARD</p>
               </a>
               <a

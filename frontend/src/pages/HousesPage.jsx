@@ -87,7 +87,7 @@ const HousesPage = ({ user, onLogout, onUpdateUser }) => {
   };
 
   return (
-    <div className="minecraft-bg min-h-screen pb-12">
+    <div className="kapitalist-bg min-h-screen pb-12">
       <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4">
         <div className="mb-8 flex items-center justify-between">
@@ -196,7 +196,7 @@ const HousesPage = ({ user, onLogout, onUpdateUser }) => {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <Building2 size={32} className="text-cyan-400" />
-                  <Badge variant="default" className="bg-emerald-600">
+                  <Badge variant="default" className="bg-purple-600">
                     {house.status}
                   </Badge>
                 </div>
@@ -212,7 +212,7 @@ const HousesPage = ({ user, onLogout, onUpdateUser }) => {
                 {house.owner_username && (
                   <div className="text-sm">
                     <span className="text-slate-500">Owner: </span>
-                    <span className="font-bold text-emerald-400">{house.owner_username}</span>
+                    <span className="font-bold text-purple-400">{house.owner_username}</span>
                   </div>
                 )}
 

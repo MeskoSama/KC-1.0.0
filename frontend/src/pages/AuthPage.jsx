@@ -61,14 +61,14 @@ const AuthPage = ({ onLogin }) => {
   };
 
   return (
-    <div className="minecraft-bg min-h-screen flex items-center justify-center p-4">
+    <div className="kapitalist-bg min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-lg mb-4 pulse-glow">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-lg mb-4 pulse-glow">
             <Pickaxe size={32} className="text-white" />
           </div>
           <h1 className="text-4xl font-black mb-2">
-            <span className="text-emerald-400 glow-text">Kapitalist</span>
+            <span className="text-purple-400 glow-text">Kapitalist</span>
             <span className="text-slate-100">TRADERS</span>
           </h1>
           <p className="text-slate-400">Enter your Minecraft credentials</p>
@@ -81,7 +81,7 @@ const AuthPage = ({ onLogin }) => {
           </TabsList>
 
           <TabsContent value="login">
-            <Card className="glass-card border-emerald-600/20">
+            <Card className="glass-card border-purple-600/20">
               <CardHeader>
                 <CardTitle>Login</CardTitle>
                 <CardDescription>Enter your Minecraft username and server code</CardDescription>
@@ -145,7 +145,7 @@ const AuthPage = ({ onLogin }) => {
           </TabsContent>
 
           <TabsContent value="register">
-            <Card className="glass-card border-emerald-600/20">
+            <Card className="glass-card border-purple-600/20">
               <CardHeader>
                 <CardTitle>Register</CardTitle>
                 <CardDescription>Create a new account</CardDescription>

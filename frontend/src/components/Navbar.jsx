@@ -20,7 +20,7 @@ export const Navbar = ({ user, onLogout }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/dashboard" className="text-2xl font-black tracking-tight">
-              <span className="text-emerald-400 glow-text">Kapitalist</span>
+              <span className="text-purple-400 glow-text">Kapitalist</span>
               <span className="text-slate-200">TRADERS</span>
             </Link>
             <div className="hidden md:flex items-center gap-2">
@@ -35,7 +35,7 @@ export const Navbar = ({ user, onLogout }) => {
                   >
                     <Button
                       variant={isActive ? 'default' : 'ghost'}
-                      className={`gap-2 ${isActive ? 'bg-emerald-600 hover:bg-emerald-700' : 'hover:bg-emerald-950'}`}
+                      className={`gap-2 ${isActive ? 'bg-purple-600 hover:bg-purple-700' : 'hover:bg-purple-950'}`}
                     >
                       <Icon size={18} />
                       {item.label}
@@ -48,10 +48,10 @@ export const Navbar = ({ user, onLogout }) => {
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm text-slate-400">Player</span>
-              <span className="font-bold text-emerald-400" data-testid="navbar-username">{user.username}</span>
+              <span className="font-bold text-purple-400" data-testid="navbar-username">{user.username}</span>
             </div>
             <div className="currency-badge" data-testid="navbar-balance">
-              <span className="text-emerald-400 font-bold">{user.balances[user.currency_type].toFixed(2)}</span>
+              <span className="text-purple-400 font-bold">{user.balances[user.currency_type].toFixed(2)}</span>
               <span className="text-slate-300">{user.currency_type}</span>
             </div>
             <Button
