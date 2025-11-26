@@ -23,9 +23,9 @@ export const Navbar = ({ user, onLogout }) => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link to="/dashboard" className="text-2xl font-black tracking-tight">
-              <span className="text-purple-400 glow-text">Kapitalist</span>
-              <span className="text-slate-200">TRADERS</span>
+            <Link to="/dashboard" className="text-lg font-black tracking-tight">
+              <span className="text-purple-400 glow-text">KAPITALISTCRAFT</span>
+              <span className="text-white text-xs block -mt-1">Trade Center</span>
             </Link>
             <div className="hidden md:flex items-center gap-2">
               {navItems.map((item) => {
