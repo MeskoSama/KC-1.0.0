@@ -39,9 +39,19 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
     }
   };
 
-  const calculatePrice = (amount) => {
-    const rate = currencyRates[user.currency_type] || 4081.63;
-    return (amount / rate).toFixed(2);
+  const calculatePrice = (amount, currency) => {
+    if (!currencyRates || !currencyRates.GRP_TO_USD) return '0.00';
+    
+    // Convert to GRP first
+    let grpAmount = amount;
+    if (currency !== 'GRP') {
+      const rateKey = `GRP_TO_${currency}`;
+      grpAmount = amount / currencyRates[rateKey];
+    }
+    
+    // Convert GRP to USD
+    const usdAmount = grpAmount * currencyRates.GRP_TO_USD;
+    return usdAmount.toFixed(2);
   };
 
   const handleBuyCurrency = async () => {
