@@ -142,13 +142,30 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
                 <CardHeader>
                   <CardTitle className="text-2xl flex items-center gap-2">
                     <Coins className="text-purple-400" />
-                    Buy {user.currency_type}
+                    Buy Server Currency
                   </CardTitle>
-                  <CardDescription>Purchase in-game currency with VISA/MASTERCARD via Stripe</CardDescription>
+                  <CardDescription>Purchase ANY server currency with VISA/MASTERCARD via Stripe</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currency-amount">Amount ({user.currency_type})</Label>
+                    <Label htmlFor="select-currency">Select Currency</Label>
+                    <select
+                      id="select-currency"
+                      value={selectedCurrency}
+                      onChange={(e) => setSelectedCurrency(e.target.value)}
+                      className="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg text-lg font-bold text-purple-400"
+                      data-testid="currency-selector"
+                    >
+                      <option value="NIM">NIM</option>
+                      <option value="GRP">GRP</option>
+                      <option value="VDD">VDD</option>
+                      <option value="KKD">KKD</option>
+                    </select>
+                    <p className="text-sm text-slate-500">You can buy any currency regardless of your server</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="currency-amount">Amount ({selectedCurrency})</Label>
                     <Input
                       id="currency-amount"
                       data-testid="currency-amount-input"
@@ -159,20 +176,20 @@ const Marketplace = ({ user, onLogout, onUpdateUser }) => {
                       onChange={(e) => setCurrencyAmount(e.target.value)}
                       className="bg-slate-800/50 border-slate-700 text-lg"
                     />
-                    <p className="text-sm text-slate-500">Minimum: 1,000 {user.currency_type}</p>
+                    <p className="text-sm text-slate-500">Minimum: 1,000 {selectedCurrency}</p>
                   </div>
 
                   <div className="p-4 bg-purple-600/10 border border-purple-600/30 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-slate-400">You get:</span>
                       <span className="text-2xl font-bold text-purple-400">
-                        {parseFloat(currencyAmount).toLocaleString()} {user.currency_type}
+                        {parseFloat(currencyAmount).toLocaleString()} {selectedCurrency}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Price:</span>
                       <span className="text-2xl font-bold text-white">
-                        ${calculatePrice(currencyAmount)} USD
+                        ${calculatePrice(currencyAmount, selectedCurrency)} USD
                       </span>
                     </div>
                   </div>
