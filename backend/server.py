@@ -873,6 +873,117 @@ async def stripe_webhook(request: Request):
         logging.error(f"Webhook error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
+# Investment Routes
+@api_router.get("/investments")
+async def get_investments(current_user: dict = Depends(get_current_user)):
+    investments = await db.investments.find({}, {"_id": 0}).to_list(1000)
+    return {"investments": investments}
+
+@api_router.get("/exchange-rates")
+async def get_exchange_rates_matrix():
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
+    if rates_doc:
+        return {"rates": rates_doc.get("rates", {})}
+    return {"rates": {}}
+
+@api_router.post("/investments/buy")
+async def buy_investment(symbol: str, quantity: float, current_user: dict = Depends(get_current_user)):
+    # Get investment
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    
+    currency = investment["currency"]
+    price = investment["current_price"]
+    total = price * quantity
+    commission = total * 0.00001  # 0.001%
+    final_amount = total + commission
+    
+    # Check balance
+    if current_user["balances"][currency] < final_amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+    
+    # Update user balance and portfolio
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {
+                f"balances.{currency}": -final_amount,
+                f"portfolio.{symbol}": quantity,
+                "total_transactions": 1
+            }
+        }
+    )
+    
+    # Record transaction
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "username": current_user["minecraft_username"],
+        "symbol": symbol,
+        "transaction_type": "buy",
+        "quantity": quantity,
+        "price_per_unit": price,
+        "total_amount": total,
+        "commission": commission,
+        "currency": currency,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.investment_transactions.insert_one(transaction)
+    
+    return {"message": "Purchase successful", "transaction": transaction}
+
+@api_router.post("/investments/sell")
+async def sell_investment(symbol: str, quantity: float, current_user: dict = Depends(get_current_user)):
+    # Check if user owns this stock
+    portfolio = current_user.get("portfolio", {})
+    owned = portfolio.get(symbol, 0)
+    
+    if owned < quantity:
+        raise HTTPException(status_code=400, detail="Insufficient shares")
+    
+    # Get investment
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    
+    currency = investment["currency"]
+    price = investment["current_price"]
+    total = price * quantity
+    commission = total * 0.00001  # 0.001%
+    final_amount = total - commission
+    
+    # Update user balance and portfolio
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {
+                f"balances.{currency}": final_amount,
+                f"portfolio.{symbol}": -quantity,
+                "total_transactions": 1
+            }
+        }
+    )
+    
+    # Record transaction
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "username": current_user["minecraft_username"],
+        "symbol": symbol,
+        "transaction_type": "sell",
+        "quantity": quantity,
+        "price_per_unit": price,
+        "total_amount": total,
+        "commission": commission,
+        "currency": currency,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.investment_transactions.insert_one(transaction)
+    
+    return {"message": "Sale successful", "transaction": transaction}
+
+# Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
