@@ -13,6 +13,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import AdminPanel from "./pages/AdminPanel";
 import CurrencyExchange from "./pages/CurrencyExchange";
 import TitleDeeds from "./pages/TitleDeeds";
+import Investments from "./pages/Investments";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
