@@ -222,32 +222,42 @@ const CurrencyExchange = ({ user, onLogout, onUpdateUser }) => {
             <CardHeader>
               <CardTitle className="text-2xl flex items-center gap-2">
                 <TrendingUp className="text-purple-400" />
-                Exchange Rates
+                Complete Exchange Matrix
               </CardTitle>
-              <CardDescription>Current conversion rates (Base: 1 GRP)</CardDescription>
+              <CardDescription>All currency pairs - Direct conversion rates</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {Object.entries(rates).map(([key, value]) => {
-                  if (!key.startsWith('GRP_TO_')) return null;
-                  const currency = key.replace('GRP_TO_', '');
-                  if (currency === 'USD') return null;
-                  return (
-                    <div
-                      key={key}
-                      className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-purple-500 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-lg text-purple-400">1 GRP</div>
-                          <div className="text-sm text-slate-500">Base Currency</div>
-                        </div>
-                        <ArrowRightLeft className="text-slate-600" size={20} />
-                        <div className="text-right">
-                          <div className="font-bold text-lg text-white">{value?.toFixed(5)} {currency}</div>
-                          <div className="text-sm text-slate-500">Target Currency</div>
-                        </div>
-                      </div>
+              <div className="space-y-6">
+                {currencies.map(fromCurr => (
+                  <div key={fromCurr} className="space-y-2">
+                    <h3 className="text-lg font-bold text-purple-400">From {fromCurr}:</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {currencies.map(toCurr => {
+                        if (fromCurr === toCurr) return null;
+                        const rateKey = `${fromCurr}_TO_${toCurr}`;
+                        const rate = rates[rateKey];
+                        if (!rate) return null;
+                        
+                        return (
+                          <div
+                            key={rateKey}
+                            className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-purple-500 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="text-sm font-medium text-slate-400">1 {fromCurr}</div>
+                                <ArrowRightLeft className="text-slate-600" size={16} />
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-white">{rate.toFixed(3)} {toCurr}</div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
                     </div>
                   );
                 })}
