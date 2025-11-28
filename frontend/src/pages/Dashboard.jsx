@@ -140,13 +140,21 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
             <CardDescription>What would you like to do?</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <a
+                href="/portfolio"
+                className="p-6 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 rounded-lg transition-all"
+                data-testid="quick-action-portfolio"
+              >
+                <h3 className="text-lg font-bold text-emerald-400 mb-2">📊 Portfolio</h3>
+                <p className="text-slate-400 text-sm">View your complete wealth breakdown</p>
+              </a>
               <a
                 href="/marketplace"
                 className="p-6 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-600/30 rounded-lg transition-all"
                 data-testid="quick-action-marketplace"
               >
-                <h3 className="text-lg font-bold text-purple-400 mb-2">Buy Currency</h3>
+                <h3 className="text-lg font-bold text-purple-400 mb-2">💳 Buy Currency</h3>
                 <p className="text-slate-400 text-sm">Purchase in-game currency with VISA/MASTERCARD</p>
               </a>
               <a
@@ -154,16 +162,16 @@ const Dashboard = ({ user, onLogout, onUpdateUser }) => {
                 className="p-6 bg-cyan-600/10 hover:bg-cyan-600/20 border border-cyan-600/30 rounded-lg transition-all"
                 data-testid="quick-action-houses"
               >
-                <h3 className="text-lg font-bold text-cyan-400 mb-2">Browse Houses</h3>
+                <h3 className="text-lg font-bold text-cyan-400 mb-2">🏘️ Browse Houses</h3>
                 <p className="text-slate-400 text-sm">Find your dream Minecraft property</p>
               </a>
               <a
-                href="/bounties"
-                className="p-6 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-600/30 rounded-lg transition-all"
-                data-testid="quick-action-bounties"
+                href="/transactions"
+                className="p-6 bg-amber-600/10 hover:bg-amber-600/20 border border-amber-600/30 rounded-lg transition-all"
+                data-testid="quick-action-transactions"
               >
-                <h3 className="text-lg font-bold text-rose-400 mb-2">View Bounties</h3>
-                <p className="text-slate-400 text-sm">Complete bounties to earn rewards</p>
+                <h3 className="text-lg font-bold text-amber-400 mb-2">📜 History</h3>
+                <p className="text-slate-400 text-sm">View all your transactions</p>
               </a>
             </div>
           </CardContent>
