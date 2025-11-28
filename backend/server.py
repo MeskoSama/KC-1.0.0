@@ -80,6 +80,32 @@ async def update_currency_rates(new_rates: Dict[str, float]):
         upsert=True
     )
 
+async def get_exchange_rate(from_currency: str, to_currency: str) -> float:
+    """
+    Calculate exchange rate from one currency to another
+    Returns the multiplier to convert from_currency to to_currency
+    """
+    if from_currency == to_currency:
+        return 1.0
+    
+    # Get current rates
+    rates = await get_currency_rates()
+    
+    # Convert to GRP first, then to target currency
+    grp_amount = 1.0
+    if from_currency != "GRP":
+        rate_key = f"GRP_TO_{from_currency}"
+        grp_amount = 1.0 / rates[rate_key]
+    
+    # Convert from GRP to target
+    target_amount = grp_amount
+    if to_currency != "GRP":
+        rate_key = f"GRP_TO_{to_currency}"
+        target_amount = grp_amount * rates[rate_key]
+    
+    return target_amount
+
+
 async def log_admin_action(admin_username: str, action: str, details: str):
     """Log admin actions"""
     log_entry = {
