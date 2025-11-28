@@ -288,12 +288,10 @@ class StockMarketTester:
         # Test invalid quantity - negative
         if investments:
             stock = investments[0]
-            buy_data = {
-                "symbol": stock.get("symbol"),
-                "quantity": -1
-            }
+            symbol = stock.get("symbol")
+            endpoint = f"/investments/buy?symbol={symbol}&quantity=-1"
             
-            status, response = await self.make_request("POST", "/investments/buy", buy_data)
+            status, response = await self.make_request("POST", endpoint, None)
             
             if status == 400:
                 self.log_test("Negative Quantity Error", True, "Correctly rejected negative quantity")
