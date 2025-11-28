@@ -118,9 +118,11 @@ class StockMarketTester:
         if status == 200:
             balances = response.get("balances", {})
             portfolio = response.get("portfolio", {})
+            is_admin = response.get("is_admin", False)
             
             self.log_test("Get User Info", True, f"Balances: {balances}")
             print(f"   Portfolio: {portfolio}")
+            print(f"   Is Admin: {is_admin}")
             
             # Check if user has sufficient balance for testing
             grp_balance = balances.get("GRP", 0)
@@ -128,12 +130,38 @@ class StockMarketTester:
             nim_balance = balances.get("NIM", 0)
             
             if grp_balance < 1000 or vdd_balance < 1000 or nim_balance < 1000:
-                print(f"   ⚠️  Low balance detected. May need admin to add funds for testing.")
+                print(f"   ⚠️  Low balance detected. Attempting to add funds for testing...")
+                await self.add_test_balance()
+                # Re-check balance after adding
+                status, response = await self.make_request("GET", "/auth/me")
+                if status == 200:
+                    balances = response.get("balances", {})
+                    portfolio = response.get("portfolio", {})
+                    print(f"   Updated Balances: {balances}")
                 
             return balances, portfolio
         else:
             self.log_test("Get User Info", False, f"Status: {status}")
             return {}, {}
+            
+    async def add_test_balance(self):
+        """Add balance for testing if user is admin"""
+        print("\n=== Adding Test Balance ===")
+        
+        currencies = ["GRP", "VDD", "NIM", "KKD"]
+        for currency in currencies:
+            balance_data = {
+                "user_id": self.user_id,
+                "currency": currency,
+                "amount": 10000.0,
+                "operation": "add"
+            }
+            
+            status, response = await self.make_request("PUT", "/admin/user/balance", balance_data)
+            if status == 200:
+                self.log_test(f"Add {currency} Balance", True, f"Added 10000 {currency}")
+            else:
+                self.log_test(f"Add {currency} Balance", False, f"Status: {status}, Response: {response}")
             
     async def test_investment_listing(self):
         """Test GET /api/investments - Verify stocks are returned"""
