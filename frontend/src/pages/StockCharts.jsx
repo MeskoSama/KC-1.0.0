@@ -187,6 +187,63 @@ const StockCharts = ({ user, onLogout }) => {
           <p className="text-slate-400 text-lg">Real-time market data and price charts</p>
         </div>
 
+        {/* Market Overview */}
+        {marketOverview && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Top Gainers */}
+            <Card className="glass-card border-green-600/20">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2 text-green-400">
+                  <TrendingUp size={24} />
+                  Top Gainers (90 Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {marketOverview.top_gainers.slice(0, 5).map((stock, index) => (
+                    <div key={stock.symbol} className="flex items-center justify-between p-3 bg-green-600/5 border border-green-600/20 rounded-lg">
+                      <div>
+                        <div className="font-bold text-white">{stock.symbol}</div>
+                        <div className="text-xs text-red-500">{stock.name}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-400 text-lg">+{stock.change_percent.toFixed(2)}%</div>
+                        <div className="text-xs text-slate-400">{stock.current_price.toFixed(2)} {stock.currency}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Top Losers */}
+            <Card className="glass-card border-red-600/20">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2 text-red-400">
+                  <TrendingDown size={24} />
+                  Top Losers (90 Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {marketOverview.top_losers.slice(0, 5).map((stock, index) => (
+                    <div key={stock.symbol} className="flex items-center justify-between p-3 bg-red-600/5 border border-red-600/20 rounded-lg">
+                      <div>
+                        <div className="font-bold text-white">{stock.symbol}</div>
+                        <div className="text-xs text-red-500">{stock.name}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-red-400 text-lg">{stock.change_percent.toFixed(2)}%</div>
+                        <div className="text-xs text-slate-400">{stock.current_price.toFixed(2)} {stock.currency}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <Tabs defaultValue="stocks" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 max-w-md">
             <TabsTrigger value="stocks">
