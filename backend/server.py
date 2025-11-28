@@ -983,6 +983,349 @@ async def sell_investment(symbol: str, quantity: float, current_user: dict = Dep
     
     return {"message": "Sale successful", "transaction": transaction}
 
+# Admin Investment Management
+@api_router.put("/admin/investment/price")
+async def admin_update_stock_price(update: dict, current_user: dict = Depends(get_admin_user)):
+    symbol = update.get("symbol")
+    new_price = update.get("new_price")
+    
+    if not symbol or new_price is None or new_price < 0:
+        raise HTTPException(status_code=400, detail="Invalid data")
+    
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    
+    old_price = investment["current_price"]
+    
+    # Update price and add to history
+    await db.investments.update_one(
+        {"symbol": symbol},
+        {
+            "$set": {
+                "current_price": new_price,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            },
+            "$push": {
+                "price_history": {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "price": new_price,
+                    "old_price": old_price
+                }
+            }
+        }
+    )
+    
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "UPDATE_STOCK_PRICE",
+        f"Symbol: {symbol}, Old: {old_price}, New: {new_price}"
+    )
+    
+    return {"message": "Stock price updated", "symbol": symbol, "new_price": new_price}
+
+@api_router.put("/admin/exchange-rate")
+async def admin_update_exchange_rate(update: dict, current_user: dict = Depends(get_admin_user)):
+    rate_key = update.get("rate_key")
+    new_rate = update.get("new_rate")
+    
+    if not rate_key or new_rate is None or new_rate <= 0:
+        raise HTTPException(status_code=400, detail="Invalid data")
+    
+    # Get current rates
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
+    if not rates_doc:
+        raise HTTPException(status_code=404, detail="Exchange rates not found")
+    
+    rates = rates_doc.get("rates", {})
+    old_rate = rates.get(rate_key, 0)
+    rates[rate_key] = new_rate
+    
+    await db.exchange_rates.update_one(
+        {"id": "exchange_matrix"},
+        {"$set": {"rates": rates}}
+    )
+    
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "UPDATE_EXCHANGE_RATE",
+        f"Rate: {rate_key}, Old: {old_rate}, New: {new_rate}"
+    )
+    
+    return {"message": "Exchange rate updated", "rate_key": rate_key, "new_rate": new_rate}
+
+@api_router.put("/admin/user/real-money-access")
+async def admin_toggle_real_money_access(user_id: str, enable: bool, current_user: dict = Depends(get_admin_user)):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"can_use_real_money": enable}}
+    )
+    
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "TOGGLE_REAL_MONEY_ACCESS",
+        f"User: {user['minecraft_username']}, Enabled: {enable}"
+    )
+    
+    return {"message": f"Real money access {'enabled' for 'disabled'} for {user['minecraft_username']}"}
+
+@api_router.post("/admin/transaction/refund")
+async def admin_refund_transaction(transaction_id: str, current_user: dict = Depends(get_admin_user)):
+    # Find payment transaction
+    payment = await db.payment_transactions.find_one({"id": transaction_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    if payment.get("refunded", False):
+        raise HTTPException(status_code=400, detail="Already refunded")
+    
+    # Refund logic - deduct the items/currency that were given
+    metadata = payment.get("metadata", {})
+    user_id = payment["user_id"]
+    
+    if metadata.get("package_type") == "currency":
+        currency = metadata["currency_type"]
+        quantity = float(metadata["quantity"])
+        
+        await db.users.update_one(
+            {"id": user_id},
+            {"$inc": {f"balances.{currency}": -quantity}}
+        )
+    elif metadata.get("package_type") == "rank":
+        rank = metadata["package_id"]
+        await db.users.update_one(
+            {"id": user_id},
+            {"$pull": {"owned_ranks": rank}}
+        )
+    
+    # Mark as refunded
+    await db.payment_transactions.update_one(
+        {"id": transaction_id},
+        {"$set": {
+            "refunded": True,
+            "refunded_at": datetime.now(timezone.utc).isoformat(),
+            "refunded_by": current_user["minecraft_username"]
+        }}
+    )
+    
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "REFUND_TRANSACTION",
+        f"Transaction ID: {transaction_id}, Amount: ${payment['amount']}"
+    )
+    
+    return {"message": "Transaction refunded successfully"}
+
+# House Building Type Routes
+@api_router.get("/houses/building-types")
+async def get_building_types():
+    return {"types": [
+        "House", "Floor", "Complex", "Apartment", "Business",
+        "Industrial", "Factory", "Park", "Agricultural Land", "Zoned Area"
+    ]}
+
+@api_router.post("/houses/list-with-type")
+async def list_house_with_type(house_data: dict, current_user: dict = Depends(get_current_user)):
+    required_fields = ["name", "description", "location", "building_type", "price_currency", "price_amount"]
+    for field in required_fields:
+        if field not in house_data:
+            raise HTTPException(status_code=400, detail=f"Missing field: {field}")
+    
+    house = {
+        "id": str(uuid.uuid4()),
+        "name": house_data["name"],
+        "description": house_data["description"],
+        "location": house_data["location"],
+        "building_type": house_data["building_type"],
+        "price_currency": house_data["price_currency"],
+        "price_amount": float(house_data["price_amount"]),
+        "owner_id": current_user["id"],
+        "owner_username": current_user["minecraft_username"],
+        "images": house_data.get("images", []),
+        "status": "pending",
+        "listed_at": datetime.now(timezone.utc).isoformat(),
+        "admin_approved": False
+    }
+    
+    await db.houses.insert_one(house)
+    return {"message": "House listed successfully. Waiting for admin approval.", "house_id": house["id"]}
+
+@api_router.post("/houses/buy-with-currency")
+async def buy_house_with_any_currency(house_id: str, payment_currency: str, current_user: dict = Depends(get_current_user)):
+    house = await db.houses.find_one({"id": house_id}, {"_id": 0})
+    if not house:
+        raise HTTPException(status_code=404, detail="House not found")
+    
+    if house["status"] != "available":
+        raise HTTPException(status_code=400, detail="House not available")
+    
+    # Convert price to payment currency
+    house_currency = house["price_currency"]
+    house_price = house["price_amount"]
+    
+    if payment_currency == house_currency:
+        final_price = house_price
+    else:
+        rate = await get_exchange_rate(house_currency, payment_currency)
+        final_price = house_price * rate
+    
+    # Check balance
+    if current_user["balances"][payment_currency] < final_price:
+        raise HTTPException(status_code=400, detail=f"Insufficient {payment_currency} balance")
+    
+    # Create title deed
+    title_deed = {
+        "id": str(uuid.uuid4()),
+        "house_id": house_id,
+        "house_name": house["name"],
+        "building_type": house.get("building_type", "House"),
+        "owner_id": current_user["id"],
+        "owner_username": current_user["minecraft_username"],
+        "previous_owner_id": house.get("owner_id"),
+        "previous_owner_username": house.get("owner_username"),
+        "purchase_price": final_price,
+        "purchase_currency": payment_currency,
+        "issued_date": datetime.now(timezone.utc).isoformat(),
+        "location": house["location"]
+    }
+    
+    await db.title_deeds.insert_one(title_deed)
+    
+    # Update user and house
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {f"balances.{payment_currency}": -final_price, "total_transactions": 1},
+            "$push": {"owned_houses": house_id}
+        }
+    )
+    
+    await db.houses.update_one(
+        {"id": house_id},
+        {
+            "$set": {
+                "status": "sold",
+                "sold_at": datetime.now(timezone.utc).isoformat(),
+                "owner_id": current_user["id"],
+                "owner_username": current_user["minecraft_username"],
+                "title_deed_id": title_deed["id"]
+            }
+        }
+    )
+    
+    return {
+        "message": "House purchased successfully! Title deed issued.",
+        "title_deed_id": title_deed["id"],
+        "paid": f"{final_price:.2f} {payment_currency}"
+    }
+
+@api_router.post("/houses/swap")
+async def swap_houses(swap_data: dict, current_user: dict = Depends(get_current_user)):
+    my_house_id = swap_data.get("my_house_id")
+    their_house_id = swap_data.get("their_house_id")
+    
+    # Get both houses
+    my_house = await db.houses.find_one({"id": my_house_id}, {"_id": 0})
+    their_house = await db.houses.find_one({"id": their_house_id}, {"_id": 0})
+    
+    if not my_house or not their_house:
+        raise HTTPException(status_code=404, detail="House not found")
+    
+    # Verify ownership
+    if my_house["owner_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="You don't own this house")
+    
+    # Calculate price difference
+    my_price = my_house["price_amount"]
+    their_price = their_house["price_amount"]
+    currency = my_house["price_currency"]
+    
+    # Convert their price if different currency
+    if their_house["price_currency"] != currency:
+        rate = await get_exchange_rate(their_house["price_currency"], currency)
+        their_price_converted = their_price * rate
+    else:
+        their_price_converted = their_price
+    
+    price_difference = abs(my_price - their_price_converted)
+    
+    # Determine who pays
+    if my_price < their_price_converted:
+        # Current user pays difference
+        if current_user["balances"][currency] < price_difference:
+            raise HTTPException(status_code=400, detail="Insufficient balance to cover price difference")
+        
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$inc": {f"balances.{currency}": -price_difference}}
+        )
+        
+        await db.users.update_one(
+            {"id": their_house["owner_id"]},
+            {"$inc": {f"balances.{currency}": price_difference}}
+        )
+    elif my_price > their_price_converted:
+        # Other user pays difference (credited to current user)
+        other_user = await db.users.find_one({"id": their_house["owner_id"]}, {"_id": 0})
+        if other_user["balances"][currency] < price_difference:
+            raise HTTPException(status_code=400, detail="Other user has insufficient balance")
+        
+        await db.users.update_one(
+            {"id": their_house["owner_id"]},
+            {"$inc": {f"balances.{currency}": -price_difference}}
+        )
+        
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$inc": {f"balances.{currency}": price_difference}}
+        )
+    
+    # Swap ownership
+    await db.houses.update_one(
+        {"id": my_house_id},
+        {"$set": {"owner_id": their_house["owner_id"], "owner_username": their_house["owner_username"]}}
+    )
+    
+    await db.houses.update_one(
+        {"id": their_house_id},
+        {"$set": {"owner_id": current_user["id"], "owner_username": current_user["minecraft_username"]}}
+    )
+    
+    # Update user house lists
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$pull": {"owned_houses": my_house_id}, "$push": {"owned_houses": their_house_id}}
+    )
+    
+    await db.users.update_one(
+        {"id": their_house["owner_id"]},
+        {"$pull": {"owned_houses": their_house_id}, "$push": {"owned_houses": my_house_id}}
+    )
+    
+    return {
+        "message": "Houses swapped successfully",
+        "price_difference": f"{price_difference:.2f} {currency}",
+        "paid_by": "you" if my_price < their_price_converted else "them" if my_price > their_price_converted else "none"
+    }
+
+@api_router.get("/admin/investment-history/{symbol}")
+async def get_investment_price_history(symbol: str, current_user: dict = Depends(get_current_user)):
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    
+    return {
+        "symbol": symbol,
+        "name": investment["name"],
+        "current_price": investment["current_price"],
+        "currency": investment["currency"],
+        "price_history": investment.get("price_history", [])
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
