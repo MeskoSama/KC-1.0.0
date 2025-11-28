@@ -238,7 +238,7 @@ const Portfolio = ({ user, onLogout }) => {
                       >
                         <div>
                           <h3 className="text-white font-bold text-lg">{investment.symbol}</h3>
-                          <p className="text-slate-400 text-sm">{investment.name}</p>
+                          <p className="text-red-500 text-sm font-medium">{investment.name}</p>
                           <div className="flex gap-3 mt-2 text-sm">
                             <span className="text-slate-500">
                               Qty: <span className="text-slate-300">{investment.quantity}</span>
