@@ -1680,6 +1680,93 @@ async def get_portfolio_summary(current_user: dict = Depends(get_current_user)):
     }
 
 
+# Price History & Charts Routes
+@api_router.get("/stocks/{symbol}/history")
+async def get_stock_price_history(
+    symbol: str,
+    days: Optional[int] = 90,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get historical price data for a specific stock"""
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    
+    price_history = investment.get("price_history", [])
+    
+    # Limit to requested days
+    if days and len(price_history) > days:
+        price_history = price_history[-days:]
+    
+    return {
+        "symbol": symbol,
+        "name": investment["name"],
+        "currency": investment["currency"],
+        "current_price": investment["current_price"],
+        "history": price_history
+    }
+
+@api_router.get("/currency/history")
+async def get_currency_exchange_history(
+    days: Optional[int] = 90,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get historical exchange rate data"""
+    # Fetch from exchange_rate_history collection
+    history = await db.exchange_rate_history.find(
+        {},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(days).to_list(days or 90)
+    
+    # Reverse to get chronological order
+    history.reverse()
+    
+    return {
+        "history": history,
+        "current_rates": await get_currency_rates()
+    }
+
+@api_router.get("/market/overview")
+async def get_market_overview(current_user: dict = Depends(get_current_user)):
+    """Get overall market statistics and top movers"""
+    investments = await db.investments.find({}, {"_id": 0}).to_list(1000)
+    
+    top_gainers = []
+    top_losers = []
+    
+    for inv in investments:
+        history = inv.get("price_history", [])
+        if len(history) >= 2:
+            start_price = history[0]["price"]
+            current_price = inv["current_price"]
+            change_pct = ((current_price - start_price) / start_price) * 100
+            
+            inv_data = {
+                "symbol": inv["symbol"],
+                "name": inv["name"],
+                "currency": inv["currency"],
+                "current_price": current_price,
+                "change_percent": round(change_pct, 2)
+            }
+            
+            if change_pct > 0:
+                top_gainers.append(inv_data)
+            else:
+                top_losers.append(inv_data)
+    
+    # Sort and get top 5
+    top_gainers = sorted(top_gainers, key=lambda x: x["change_percent"], reverse=True)[:5]
+    top_losers = sorted(top_losers, key=lambda x: x["change_percent"])[:5]
+    
+    return {
+        "total_stocks": len(investments),
+        "top_gainers": top_gainers,
+        "top_losers": top_losers,
+        "currencies": ["NIM", "GRP", "VDD", "KKD"]
+    }
+
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
