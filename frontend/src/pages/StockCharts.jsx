@@ -28,7 +28,7 @@ const StockCharts = ({ user, onLogout }) => {
 
   useEffect(() => {
     if (selectedStock) {
-      generateStockChartData(selectedStock);
+      loadStockHistory(selectedStock.symbol);
     }
   }, [selectedStock, viewCurrency]);
 
