@@ -62,7 +62,7 @@ const AdminInvestments = () => {
     }
   };
 
-  const groupedByurrency = investments.reduce((acc, inv) => {
+  const groupedByCurrency = investments.reduce((acc, inv) => {
     if (!acc[inv.currency]) acc[inv.currency] = [];
     acc[inv.currency].push(inv);
     return acc;
