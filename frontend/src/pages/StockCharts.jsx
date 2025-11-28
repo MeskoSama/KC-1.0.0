@@ -66,50 +66,78 @@ const StockCharts = ({ user, onLogout }) => {
     return price * rate;
   };
 
-  const generateStockChartData = (stock) => {
-    // Generate realistic price history
-    const data = [];
-    const basePrice = stock.current_price;
-    const now = new Date();
-    
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      
-      // Simulate price fluctuation
-      const fluctuation = (Math.random() - 0.5) * 0.1; // ±5% fluctuation
-      const dayPrice = basePrice * (1 + (fluctuation * (i / 30)));
-      const convertedPrice = convertPrice(dayPrice, stock.currency, viewCurrency);
-      
-      data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        price: parseFloat(convertedPrice.toFixed(2)),
-        volume: Math.floor(Math.random() * 10000) + 1000
+  const loadStockHistory = async (symbol) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/stocks/${symbol}/history?days=90`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      
+      const history = response.data.history || [];
+      const stockCurrency = response.data.currency;
+      
+      // Transform data for chart
+      const transformedData = history.map(point => {
+        const date = new Date(point.timestamp);
+        const convertedPrice = convertPrice(point.price, stockCurrency, viewCurrency);
+        
+        return {
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          price: parseFloat(convertedPrice.toFixed(2)),
+          originalPrice: point.price,
+          change: point.change || 0
+        };
+      });
+      
+      setChartData(transformedData);
+    } catch (error) {
+      console.error('Failed to load stock history:', error);
+      toast.error('Failed to load price history');
+    } finally {
+      setLoading(false);
     }
-    
-    setChartData(data);
   };
 
-  const generateCurrencyChartData = () => {
-    // Generate currency exchange rate history
-    const data = [];
-    const now = new Date();
-    
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      
-      data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        NIM: 1.687 * (1 + (Math.random() - 0.5) * 0.05),
-        GRP: 1,
-        VDD: 2.366 * (1 + (Math.random() - 0.5) * 0.05),
-        KKD: 2.614 * (1 + (Math.random() - 0.5) * 0.05)
+  const loadCurrencyHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/currency/history?days=90`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      
+      const history = response.data.history || [];
+      
+      // Transform data for chart
+      const transformedData = history.map(point => {
+        const date = new Date(point.timestamp);
+        const rates = point.rates || {};
+        
+        return {
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          NIM: rates.GRP_TO_NIM || 0,
+          VDD: rates.GRP_TO_VDD || 0,
+          KKD: rates.GRP_TO_KKD || 0,
+          GRP: 1
+        };
+      });
+      
+      setCurrencyChartData(transformedData);
+    } catch (error) {
+      console.error('Failed to load currency history:', error);
     }
-    
-    setCurrencyChartData(data);
+  };
+
+  const loadMarketOverview = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/market/overview`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMarketOverview(response.data);
+    } catch (error) {
+      console.error('Failed to load market overview:', error);
+    }
   };
 
   const CustomTooltip = ({ active, payload }) => {
