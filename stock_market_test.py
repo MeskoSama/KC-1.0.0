@@ -342,28 +342,48 @@ class StockMarketTester:
                              f"Status: {status}, Response: {response}")
                              
     async def test_portfolio_view(self):
-        """Test GET /api/auth/me after purchase - verify portfolio field"""
+        """Test portfolio view - check both /auth/me and /portfolio/summary"""
         print("\n=== Testing Portfolio View ===")
         
+        # Test /auth/me endpoint
         status, response = await self.make_request("GET", "/auth/me")
         
         if status == 200:
             portfolio = response.get("portfolio", {})
-            self.log_test("Portfolio Field Exists", "portfolio" in response, 
+            has_portfolio_field = "portfolio" in response
+            self.log_test("Portfolio Field in /auth/me", has_portfolio_field, 
                          f"Portfolio: {portfolio}")
             
-            # Check if portfolio contains purchased stocks
-            if portfolio:
-                total_shares = sum(portfolio.values())
-                self.log_test("Portfolio Contains Stocks", total_shares > 0,
-                             f"Total shares owned: {total_shares}")
-                             
-                # Verify quantities are correct (should be positive numbers)
-                valid_quantities = all(isinstance(qty, (int, float)) and qty >= 0 for qty in portfolio.values())
-                self.log_test("Portfolio Quantities Valid", valid_quantities,
-                             f"Quantities: {list(portfolio.values())}")
+            # If no portfolio field in /auth/me, check /portfolio/summary
+            if not has_portfolio_field:
+                status2, response2 = await self.make_request("GET", "/portfolio/summary")
+                if status2 == 200:
+                    breakdown = response2.get("breakdown", {})
+                    investments = breakdown.get("investments", [])
+                    self.log_test("Portfolio via /portfolio/summary", True,
+                                 f"Found {len(investments)} investments")
+                    
+                    if investments:
+                        total_shares = sum(inv.get("quantity", 0) for inv in investments)
+                        self.log_test("Portfolio Contains Stocks", total_shares > 0,
+                                     f"Total shares owned: {total_shares}")
+                    else:
+                        self.log_test("Portfolio Contains Stocks", False, "No investments found")
+                else:
+                    self.log_test("Portfolio via /portfolio/summary", False, f"Status: {status2}")
             else:
-                self.log_test("Portfolio Contains Stocks", False, "Portfolio is empty")
+                # Check if portfolio contains purchased stocks
+                if portfolio:
+                    total_shares = sum(portfolio.values())
+                    self.log_test("Portfolio Contains Stocks", total_shares > 0,
+                                 f"Total shares owned: {total_shares}")
+                                 
+                    # Verify quantities are correct (should be positive numbers)
+                    valid_quantities = all(isinstance(qty, (int, float)) and qty >= 0 for qty in portfolio.values())
+                    self.log_test("Portfolio Quantities Valid", valid_quantities,
+                                 f"Quantities: {list(portfolio.values())}")
+                else:
+                    self.log_test("Portfolio Contains Stocks", False, "Portfolio is empty")
         else:
             self.log_test("Get Portfolio", False, f"Status: {status}")
             
