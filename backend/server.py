@@ -1010,7 +1010,7 @@ async def sell_investment(symbol: str, quantity: float, current_user: dict = Dep
         "currency": currency,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
-    await db.investment_transactions.insert_one(transaction)
+    await db.investment_transactions.insert_one(transaction.copy())
     
     return {"message": "Sale successful", "transaction": transaction}
 
