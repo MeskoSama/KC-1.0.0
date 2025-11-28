@@ -29,7 +29,7 @@ const CurrencyExchange = ({ user, onLogout, onUpdateUser }) => {
   const loadRates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/marketplace/currency-rates`, {
+      const response = await axios.get(`${API}/exchange-rates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRates(response.data.rates);
@@ -39,24 +39,20 @@ const CurrencyExchange = ({ user, onLogout, onUpdateUser }) => {
   };
 
   const calculateConversion = () => {
-    if (!rates || !amount || fromCurrency === toCurrency) {
+    if (!rates || !amount) {
       setConvertedAmount(amount);
       return;
     }
 
-    // Convert to GRP first
-    let grpAmount = parseFloat(amount);
-    if (fromCurrency !== 'GRP') {
-      const rateKey = `GRP_TO_${fromCurrency}`;
-      grpAmount = amount / rates[rateKey];
+    if (fromCurrency === toCurrency) {
+      setConvertedAmount(amount);
+      return;
     }
 
-    // Convert from GRP to target
-    let targetAmount = grpAmount;
-    if (toCurrency !== 'GRP') {
-      const rateKey = `GRP_TO_${toCurrency}`;
-      targetAmount = grpAmount * rates[rateKey];
-    }
+    // Use direct conversion from exchange matrix
+    const rateKey = `${fromCurrency}_TO_${toCurrency}`;
+    const rate = rates[rateKey] || 1.0;
+    const targetAmount = parseFloat(amount) * rate;
 
     setConvertedAmount(targetAmount.toFixed(2));
   };
