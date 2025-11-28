@@ -346,35 +346,35 @@ const StockCharts = ({ user, onLogout }) => {
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={400}>
-                    <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b45fa" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#8b45fa" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="#94a3b8"
-                        tick={{ fill: '#94a3b8' }}
-                      />
-                      <YAxis 
-                        stroke="#94a3b8"
-                        tick={{ fill: '#94a3b8' }}
-                        domain={['dataMin - 10', 'dataMax + 10']}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Area 
-                        type="monotone" 
-                        dataKey="price" 
-                        stroke="#8b45fa" 
-                        strokeWidth={3}
-                        fillOpacity={1}
-                        fill="url(#colorPrice)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#8b45fa" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#8b45fa" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#94a3b8"
+                          tick={{ fill: '#94a3b8' }}
+                        />
+                        <YAxis 
+                          stroke="#94a3b8"
+                          tick={{ fill: '#94a3b8' }}
+                          domain={['dataMin - 10', 'dataMax + 10']}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="price" 
+                          stroke="#8b45fa" 
+                          strokeWidth={3}
+                          fillOpacity={1}
+                          fill="url(#colorPrice)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   )}
                 </CardContent>
               </Card>
