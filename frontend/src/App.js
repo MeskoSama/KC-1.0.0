@@ -16,6 +16,7 @@ import TitleDeeds from "./pages/TitleDeeds";
 import Investments from "./pages/Investments";
 import TransactionHistory from "./pages/TransactionHistory";
 import Portfolio from "./pages/Portfolio";
+import StockCharts from "./pages/StockCharts";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
