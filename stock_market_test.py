@@ -275,12 +275,9 @@ class StockMarketTester:
                              f"Status: {status}, Response: {response}")
         
         # Test non-existent stock
-        buy_data = {
-            "symbol": "NONEXISTENT-STOCK",
-            "quantity": 1
-        }
+        endpoint = "/investments/buy?symbol=NONEXISTENT-STOCK&quantity=1"
         
-        status, response = await self.make_request("POST", "/investments/buy", buy_data)
+        status, response = await self.make_request("POST", endpoint, None)
         
         if status == 404:
             self.log_test("Non-existent Stock Error", True, "Correctly rejected non-existent stock")
