@@ -375,6 +375,7 @@ const StockCharts = ({ user, onLogout }) => {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
             )}
