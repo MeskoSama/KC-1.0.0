@@ -1071,7 +1071,7 @@ async def admin_toggle_real_money_access(user_id: str, enable: bool, current_use
         f"User: {user['minecraft_username']}, Enabled: {enable}"
     )
     
-    return {"message": f"Real money access {'enabled' for 'disabled'} for {user['minecraft_username']}"}
+    return {"message": f"Real money access {'enabled' if enable else 'disabled'} for {user['minecraft_username']}"}
 
 @api_router.post("/admin/transaction/refund")
 async def admin_refund_transaction(transaction_id: str, current_user: dict = Depends(get_admin_user)):
