@@ -14,6 +14,8 @@ import AdminPanel from "./pages/AdminPanel";
 import CurrencyExchange from "./pages/CurrencyExchange";
 import TitleDeeds from "./pages/TitleDeeds";
 import Investments from "./pages/Investments";
+import TransactionHistory from "./pages/TransactionHistory";
+import Portfolio from "./pages/Portfolio";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
