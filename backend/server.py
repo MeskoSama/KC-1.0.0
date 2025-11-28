@@ -82,28 +82,32 @@ async def update_currency_rates(new_rates: Dict[str, float]):
 
 async def get_exchange_rate(from_currency: str, to_currency: str) -> float:
     """
-    Calculate exchange rate from one currency to another
+    Get direct exchange rate from one currency to another using the exchange matrix
     Returns the multiplier to convert from_currency to to_currency
     """
     if from_currency == to_currency:
         return 1.0
     
-    # Get current rates
-    rates = await get_currency_rates()
+    # Get exchange rate matrix
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
+    if not rates_doc:
+        # Fallback to old method if matrix not found
+        rates = await get_currency_rates()
+        grp_amount = 1.0
+        if from_currency != "GRP":
+            rate_key = f"GRP_TO_{from_currency}"
+            grp_amount = 1.0 / rates.get(rate_key, 1)
+        target_amount = grp_amount
+        if to_currency != "GRP":
+            rate_key = f"GRP_TO_{to_currency}"
+            target_amount = grp_amount * rates.get(rate_key, 1)
+        return target_amount
     
-    # Convert to GRP first, then to target currency
-    grp_amount = 1.0
-    if from_currency != "GRP":
-        rate_key = f"GRP_TO_{from_currency}"
-        grp_amount = 1.0 / rates[rate_key]
+    # Use direct conversion from matrix
+    rate_key = f"{from_currency}_TO_{to_currency}"
+    exchange_rates = rates_doc.get("rates", {})
     
-    # Convert from GRP to target
-    target_amount = grp_amount
-    if to_currency != "GRP":
-        rate_key = f"GRP_TO_{to_currency}"
-        target_amount = grp_amount * rates[rate_key]
-    
-    return target_amount
+    return exchange_rates.get(rate_key, 1.0)
 
 
 async def log_admin_action(admin_username: str, action: str, details: str):
