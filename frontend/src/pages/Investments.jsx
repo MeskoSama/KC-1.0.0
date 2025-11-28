@@ -225,7 +225,7 @@ const Investments = ({ user, onLogout, onUpdateUser }) => {
                           <TableCell>
                             <span className="font-bold text-purple-400">{stock.symbol}</span>
                           </TableCell>
-                          <TableCell className="font-medium">{stock.name}</TableCell>
+                          <TableCell className="font-medium text-red-500">{stock.name}</TableCell>
                           <TableCell>
                             <span className="px-2 py-1 bg-slate-700 rounded text-xs font-bold">
                               {stock.currency}
