@@ -22,7 +22,8 @@ const StockCharts = ({ user, onLogout }) => {
   useEffect(() => {
     loadInvestments();
     loadExchangeRates();
-    generateCurrencyChartData();
+    loadCurrencyHistory();
+    loadMarketOverview();
   }, []);
 
   useEffect(() => {
