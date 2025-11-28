@@ -337,7 +337,15 @@ const StockCharts = ({ user, onLogout }) => {
                   <CardDescription>30-day price movement</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
+                  {loading ? (
+                    <div className="flex items-center justify-center h-96">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                        <p className="text-slate-400">Loading chart data...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={400}>
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
