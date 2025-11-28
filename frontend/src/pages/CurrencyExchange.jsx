@@ -258,9 +258,6 @@ const CurrencyExchange = ({ user, onLogout, onUpdateUser }) => {
                     </div>
                   </div>
                 ))}
-                    </div>
-                  );
-                })}
               </div>
 
               {/* My Balances */}
