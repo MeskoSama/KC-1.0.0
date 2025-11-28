@@ -227,13 +227,10 @@ class StockMarketTester:
         price = stock.get("current_price")
         currency = stock.get("currency")
         
-        # Make the purchase
-        buy_data = {
-            "symbol": symbol,
-            "quantity": quantity
-        }
+        # Make the purchase using query parameters
+        endpoint = f"/investments/buy?symbol={symbol}&quantity={quantity}"
         
-        status, response = await self.make_request("POST", "/investments/buy", buy_data)
+        status, response = await self.make_request("POST", endpoint, None)
         
         if status == 200:
             transaction = response.get("transaction", {})
