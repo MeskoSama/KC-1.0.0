@@ -8,11 +8,13 @@ export const Navbar = ({ user, onLogout }) => {
 
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
+    { path: '/portfolio', icon: Wallet, label: 'Portfolio' },
     { path: '/marketplace', icon: ShoppingCart, label: 'Marketplace' },
     { path: '/investments', icon: TrendingUp, label: 'Investments' },
     { path: '/exchange', icon: ArrowRightLeft, label: 'Exchange' },
     { path: '/houses', icon: Building2, label: 'Houses' },
     { path: '/bounties', icon: Target, label: 'Bounties' },
+    { path: '/transactions', icon: History, label: 'History' },
     { path: '/scoreboard', icon: Trophy, label: 'Scoreboard' },
   ];
   
