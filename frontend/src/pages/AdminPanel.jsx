@@ -164,14 +164,24 @@ const AdminPanel = ({ user, onLogout }) => {
           })}
         </div>
 
-        <Tabs defaultValue="rates" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-900/50">
+        <Tabs defaultValue="investments" className="w-full">
+          <TabsList className="grid w-full grid-cols-7 bg-slate-900/50">
+            <TabsTrigger value="investments" data-testid="admin-tab-investments"><TrendingUp size={18} className="mr-2" />Stocks</TabsTrigger>
+            <TabsTrigger value="exchange" data-testid="admin-tab-exchange"><ArrowRightLeft size={18} className="mr-2" />Exchange</TabsTrigger>
             <TabsTrigger value="rates" data-testid="admin-tab-rates"><Settings size={18} className="mr-2" />Rates</TabsTrigger>
             <TabsTrigger value="users" data-testid="admin-tab-users"><Users size={18} className="mr-2" />Users</TabsTrigger>
             <TabsTrigger value="houses" data-testid="admin-tab-houses"><Home size={18} className="mr-2" />Houses</TabsTrigger>
-            <TabsTrigger value="transactions" data-testid="admin-tab-transactions"><TrendingUp size={18} className="mr-2" />Transactions</TabsTrigger>
+            <TabsTrigger value="transactions" data-testid="admin-tab-transactions"><DollarSign size={18} className="mr-2" />Payments</TabsTrigger>
             <TabsTrigger value="logs" data-testid="admin-tab-logs"><FileText size={18} className="mr-2" />Logs</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="investments" className="mt-6">
+            <AdminInvestments />
+          </TabsContent>
+
+          <TabsContent value="exchange" className="mt-6">
+            <AdminExchangeRates />
+          </TabsContent>
 
           <TabsContent value="rates" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
