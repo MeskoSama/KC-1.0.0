@@ -11,6 +11,7 @@ export const Navbar = ({ user, onLogout }) => {
     { path: '/portfolio', icon: Wallet, label: 'Portfolio' },
     { path: '/marketplace', icon: ShoppingCart, label: 'Marketplace' },
     { path: '/investments', icon: TrendingUp, label: 'Investments' },
+    { path: '/charts', icon: LineChart, label: 'Charts' },
     { path: '/exchange', icon: ArrowRightLeft, label: 'Exchange' },
     { path: '/houses', icon: Building2, label: 'Houses' },
     { path: '/bounties', icon: Target, label: 'Bounties' },
