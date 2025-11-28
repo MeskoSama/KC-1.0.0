@@ -345,6 +345,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "username": current_user["minecraft_username"],
         "currency_type": current_user["currency_type"],
         "balances": current_user["balances"],
+        "portfolio": current_user.get("portfolio", {}),
         "owned_ranks": current_user.get("owned_ranks", []),
         "owned_houses": current_user.get("owned_houses", []),
         "total_spent": current_user.get("total_spent", 0),
