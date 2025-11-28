@@ -17,20 +17,30 @@ from emergentintegrations.payments.stripe.checkout import StripeCheckout, Checko
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# JWT Secret
 JWT_SECRET = os.environ.get('JWT_SECRET', 'minecraft-secret-key-change-in-production')
 JWT_ALGORITHM = "HS256"
+
+# Stripe
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
 
+# Admin users
 ADMIN_USERNAMES = ["TestMiner", "meskop"]
 
+# Create the main app without a prefix
 app = FastAPI()
+
+# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
 security = HTTPBearer()
 
+# Server codes mapping
 SERVER_CODES = {
     "10194": "NIM",
     "10997": "GRP",
@@ -38,6 +48,16 @@ SERVER_CODES = {
     "90154": "KKD"
 }
 
+# Currency exchange rates (base: GRP)
+# 1 GRP = X other currency
+DEFAULT_CURRENCY_RATES = {
+    "GRP_TO_NIM": 1.68700,
+    "GRP_TO_VDD": 2.36666,
+    "GRP_TO_KKD": 2.61455,
+    "GRP_TO_USD": 0.000245
+}
+
+# Rank prices
 RANK_PRICES = {
     "Germania Empire CITIZENSHIP": 3.00,
     "FIP": 1.00,
@@ -45,17 +65,31 @@ RANK_PRICES = {
     "WIP": 7.50
 }
 
-BUILDING_TYPES = [
-    "House", "Floor", "Complex", "Apartment", "Business",
-    "Industrial", "Factory", "Park", "Agricultural Land", "Zoned Area"
-]
+async def get_currency_rates():
+    """Get currency rates from database or use defaults"""
+    rates = await db.currency_rates.find_one({"id": "current_rates"}, {"_id": 0})
+    if rates:
+        return rates.get("rates", DEFAULT_CURRENCY_RATES)
+    return DEFAULT_CURRENCY_RATES
 
-BANKS = [
-    "Bank of Cordoba (Lost Kingdom)",
-    "Sakura Bank (Holy Empire)",
-    "Bank of Germania (Federal Empire of Germania)",
-    "VDD Ansbund Joint Banking"
-]
+async def update_currency_rates(new_rates: Dict[str, float]):
+    """Update currency rates in database"""
+    await db.currency_rates.update_one(
+        {"id": "current_rates"},
+        {"$set": {"rates": new_rates, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+
+async def log_admin_action(admin_username: str, action: str, details: str):
+    """Log admin actions"""
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "admin_username": admin_username,
+        "action": action,
+        "details": details,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.admin_logs.insert_one(log_entry)
 
 # Models
 class User(BaseModel):
@@ -68,13 +102,9 @@ class User(BaseModel):
     balances: Dict[str, float] = Field(default_factory=lambda: {"NIM": 0, "GRP": 0, "VDD": 0, "KKD": 0})
     owned_ranks: List[str] = Field(default_factory=list)
     owned_houses: List[str] = Field(default_factory=list)
-    portfolio: Dict[str, float] = Field(default_factory=dict)
     total_spent: float = 0.0
     total_transactions: int = 0
     is_admin: bool = False
-    selected_bank: Optional[str] = None
-    hide_balance: bool = False
-    can_use_real_money: bool = False
     created_at: str
 
 class UserRegister(BaseModel):
@@ -87,32 +117,92 @@ class UserLogin(BaseModel):
     password: str
     server_code: str
 
-class UserSettings(BaseModel):
-    selected_bank: Optional[str] = None
-    hide_balance: Optional[bool] = None
+class House(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    location: str
+    price_usd: Optional[float] = None
+    price_currency: Optional[Dict[str, float]] = None
+    owner_id: Optional[str] = None
+    owner_username: Optional[str] = None
+    images: List[str] = Field(default_factory=list)
+    status: str = "available"
+    listed_at: str
+    sold_at: Optional[str] = None
+    admin_approved: bool = False
+    title_deed_id: Optional[str] = None
 
-class MoneyTransfer(BaseModel):
-    recipient_username: str
+class TitleDeed(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    house_id: str
+    house_name: str
+    owner_id: str
+    owner_username: str
+    previous_owner_id: Optional[str] = None
+    previous_owner_username: Optional[str] = None
+    purchase_price: float
+    purchase_currency: str
+    issued_date: str
+    location: str
+
+class CurrencyConversion(BaseModel):
+    from_currency: str
+    to_currency: str
     amount: float
+
+class HouseListing(BaseModel):
+    name: str
+    description: str
+    location: str
+    price_usd: Optional[float] = None
+    price_currency: Optional[Dict[str, float]] = None
+    images: List[str] = Field(default_factory=list)
+
+class Bounty(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    bounty_type: str
+    title: str
+    description: str
+    reward_currency: str
+    reward_amount: float
+    target_player: Optional[str] = None
+    creator_id: str
+    creator_username: str
+    status: str = "active"
+    completed_by: Optional[str] = None
+    completed_by_username: Optional[str] = None
+    created_at: str
+    completed_at: Optional[str] = None
+
+class BountyCreate(BaseModel):
+    bounty_type: str
+    title: str
+    description: str
+    reward_currency: str
+    reward_amount: float
+    target_player: Optional[str] = None
+
+class CheckoutRequest(BaseModel):
+    package_type: str
+    package_id: str
+    currency_type: Optional[str] = None
+    quantity: Optional[float] = 1.0
+
+class CurrencyRatesUpdate(BaseModel):
+    GRP_TO_NIM: float
+    GRP_TO_VDD: float
+    GRP_TO_KKD: float
+    GRP_TO_USD: float
+
+class UserBalanceUpdate(BaseModel):
+    user_id: str
     currency: str
-
-class InvestmentTransfer(BaseModel):
-    recipient_username: str
-    symbol: str
-    quantity: float
-
-class HouseSwapRequest(BaseModel):
-    my_house_id: str
-    their_house_id: str
-    their_username: str
-
-class StockPriceUpdate(BaseModel):
-    symbol: str
-    new_price: float
-
-class ExchangeRateUpdate(BaseModel):
-    rate_key: str
-    new_rate: float
+    amount: float
+    operation: str  # "add" or "set"
 
 # Utility Functions
 def hash_password(password: str) -> str:
@@ -149,26 +239,6 @@ async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(sec
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
-async def log_admin_action(admin_username: str, action: str, details: str):
-    log_entry = {
-        "id": str(uuid.uuid4()),
-        "admin_username": admin_username,
-        "action": action,
-        "details": details,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-    await db.admin_logs.insert_one(log_entry)
-
-async def get_exchange_rate(from_curr: str, to_curr: str) -> float:
-    if from_curr == to_curr:
-        return 1.0
-    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
-    if not rates_doc:
-        return 1.0
-    rates = rates_doc.get("rates", {})
-    rate_key = f"{from_curr}_TO_{to_curr}"
-    return rates.get(rate_key, 1.0)
-
 # Auth Routes
 @api_router.post("/auth/register")
 async def register(data: UserRegister):
@@ -202,10 +272,7 @@ async def register(data: UserRegister):
             "username": user.minecraft_username,
             "currency_type": user.currency_type,
             "balances": user.balances,
-            "is_admin": is_admin,
-            "hide_balance": user.hide_balance,
-            "selected_bank": user.selected_bank,
-            "portfolio": user.portfolio
+            "is_admin": is_admin
         }
     }
 
@@ -237,11 +304,7 @@ async def login(data: UserLogin):
             "balances": user["balances"],
             "owned_ranks": user.get("owned_ranks", []),
             "owned_houses": user.get("owned_houses", []),
-            "is_admin": is_admin,
-            "hide_balance": user.get("hide_balance", False),
-            "selected_bank": user.get("selected_bank"),
-            "portfolio": user.get("portfolio", {}),
-            "can_use_real_money": user.get("can_use_real_money", False)
+            "is_admin": is_admin
         }
     }
 
@@ -256,153 +319,687 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "owned_houses": current_user.get("owned_houses", []),
         "total_spent": current_user.get("total_spent", 0),
         "total_transactions": current_user.get("total_transactions", 0),
-        "is_admin": current_user.get("is_admin", False),
-        "hide_balance": current_user.get("hide_balance", False),
-        "selected_bank": current_user.get("selected_bank"),
-        "portfolio": current_user.get("portfolio", {}),
-        "can_use_real_money": current_user.get("can_use_real_money", False)
+        "is_admin": current_user.get("is_admin", False)
     }
 
-@api_router.put("/user/settings")
-async def update_user_settings(settings: UserSettings, current_user: dict = Depends(get_current_user)):
-    update_fields = {}
-    if settings.selected_bank is not None:
-        if settings.selected_bank not in BANKS and settings.selected_bank != "":
-            raise HTTPException(status_code=400, detail="Invalid bank")
-        update_fields["selected_bank"] = settings.selected_bank
-    if settings.hide_balance is not None:
-        update_fields["hide_balance"] = settings.hide_balance
+# Admin Routes
+@api_router.get("/admin/stats")
+async def get_admin_stats(current_user: dict = Depends(get_admin_user)):
+    total_users = await db.users.count_documents({})
+    total_transactions = await db.payment_transactions.count_documents({})
+    total_bounties = await db.bounties.count_documents({})
+    total_houses = await db.houses.count_documents({})
+    pending_houses = await db.houses.count_documents({"admin_approved": False})
     
-    if update_fields:
-        await db.users.update_one({"id": current_user["id"]}, {"$set": update_fields})
-    
-    return {"message": "Settings updated successfully"}
-
-@api_router.get("/banks")
-async def get_banks():
-    return {"banks": BANKS}
-
-@api_router.get("/building-types")
-async def get_building_types():
-    return {"types": BUILDING_TYPES}
-
-# P2P Money Transfer
-@api_router.post("/transfer/money")
-async def transfer_money(transfer: MoneyTransfer, current_user: dict = Depends(get_current_user)):
-    if transfer.amount <= 0:
-        raise HTTPException(status_code=400, detail="Invalid amount")
-    
-    # Find recipient
-    recipient = await db.users.find_one({"minecraft_username": transfer.recipient_username}, {"_id": 0})
-    if not recipient:
-        raise HTTPException(status_code=404, detail="Recipient not found")
-    
-    if recipient["id"] == current_user["id"]:
-        raise HTTPException(status_code=400, detail="Cannot transfer to yourself")
-    
-    # Check balance
-    if current_user["balances"][transfer.currency] < transfer.amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
-    
-    # Get exchange rate for display
-    sender_currency = current_user["currency_type"]
-    rate = await get_exchange_rate(transfer.currency, sender_currency)
-    
-    # Transfer
-    await db.users.update_one(
-        {"id": current_user["id"]},
-        {"$inc": {f"balances.{transfer.currency}": -transfer.amount}}
-    )
-    
-    await db.users.update_one(
-        {"id": recipient["id"]},
-        {"$inc": {f"balances.{transfer.currency}": transfer.amount}}
-    )
-    
-    # Log transaction
-    transaction = {
-        "id": str(uuid.uuid4()),
-        "type": "money_transfer",
-        "sender_id": current_user["id"],
-        "sender_username": current_user["minecraft_username"],
-        "recipient_id": recipient["id"],
-        "recipient_username": recipient["minecraft_username"],
-        "amount": transfer.amount,
-        "currency": transfer.currency,
-        "exchange_rate": rate,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-    await db.money_transfers.insert_one(transaction)
+    # Total revenue
+    payments = await db.payment_transactions.find({"payment_status": "paid"}, {"_id": 0, "amount": 1}).to_list(10000)
+    total_revenue = sum(p.get("amount", 0) for p in payments)
     
     return {
-        "message": "Transfer successful",
-        "sent": f"{transfer.amount} {transfer.currency}",
-        "exchange_rate": f"1 {transfer.currency} = {rate:.5f} {sender_currency}"
+        "total_users": total_users,
+        "total_transactions": total_transactions,
+        "total_bounties": total_bounties,
+        "total_houses": total_houses,
+        "pending_houses": pending_houses,
+        "total_revenue": total_revenue
     }
 
-# Investment Transfer
-@api_router.post("/transfer/investment")
-async def transfer_investment(transfer: InvestmentTransfer, current_user: dict = Depends(get_current_user)):
-    portfolio = current_user.get("portfolio", {})
-    owned = portfolio.get(transfer.symbol, 0)
+@api_router.get("/admin/users")
+async def get_all_users(current_user: dict = Depends(get_admin_user), skip: int = 0, limit: int = 50):
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).skip(skip).limit(limit).to_list(limit)
+    return {"users": users}
+
+@api_router.put("/admin/user/balance")
+async def update_user_balance(update: UserBalanceUpdate, current_user: dict = Depends(get_admin_user)):
+    user = await db.users.find_one({"id": update.user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
-    if owned < transfer.quantity:
-        raise HTTPException(status_code=400, detail="Insufficient shares")
+    if update.currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid currency")
     
-    recipient = await db.users.find_one({"minecraft_username": transfer.recipient_username}, {"_id": 0})
-    if not recipient:
-        raise HTTPException(status_code=404, detail="Recipient not found")
+    if update.operation == "add":
+        await db.users.update_one(
+            {"id": update.user_id},
+            {"$inc": {f"balances.{update.currency}": update.amount}}
+        )
+    elif update.operation == "set":
+        await db.users.update_one(
+            {"id": update.user_id},
+            {"$set": {f"balances.{update.currency}": update.amount}}
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid operation")
     
-    if recipient["id"] == current_user["id"]:
-        raise HTTPException(status_code=400, detail="Cannot transfer to yourself")
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "UPDATE_USER_BALANCE",
+        f"User: {user['minecraft_username']}, Currency: {update.currency}, Operation: {update.operation}, Amount: {update.amount}"
+    )
     
-    # Get investment
-    investment = await db.investments.find_one({"symbol": transfer.symbol}, {"_id": 0})
-    if not investment:
-        raise HTTPException(status_code=404, detail="Investment not found")
+    return {"message": "Balance updated successfully"}
+
+@api_router.get("/admin/currency-rates")
+async def get_admin_currency_rates(current_user: dict = Depends(get_admin_user)):
+    rates = await get_currency_rates()
+    return {"rates": rates}
+
+@api_router.put("/admin/currency-rates")
+async def update_admin_currency_rates(rates: CurrencyRatesUpdate, current_user: dict = Depends(get_admin_user)):
+    new_rates = rates.model_dump()
+    await update_currency_rates(new_rates)
     
-    # Calculate commission (0.01%)
-    value = investment["current_price"] * transfer.quantity
-    commission = value * 0.0001
-    currency = investment["currency"]
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "UPDATE_CURRENCY_RATES",
+        f"New rates: {new_rates}"
+    )
     
-    # Check balance for commission
-    if current_user["balances"][currency] < commission:
-        raise HTTPException(status_code=400, detail="Insufficient balance for commission")
+    return {"message": "Currency rates updated successfully", "rates": new_rates}
+
+@api_router.get("/admin/logs")
+async def get_admin_logs(current_user: dict = Depends(get_admin_user), skip: int = 0, limit: int = 100):
+    logs = await db.admin_logs.find({}, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+    return {"logs": logs}
+
+@api_router.get("/admin/transactions")
+async def get_all_transactions(current_user: dict = Depends(get_admin_user), skip: int = 0, limit: int = 50):
+    transactions = await db.payment_transactions.find({}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"transactions": transactions}
+
+# Currency Purchase Routes
+@api_router.get("/marketplace/currency-rates")
+async def get_marketplace_currency_rates():
+    rates = await get_currency_rates()
+    return {"rates": rates}
+
+@api_router.get("/marketplace/rank-prices")
+async def get_rank_prices():
+    return {"ranks": RANK_PRICES}
+
+# House Routes
+@api_router.post("/houses/list")
+async def list_house(house_data: HouseListing, current_user: dict = Depends(get_current_user)):
+    house = House(
+        **house_data.model_dump(),
+        owner_id=current_user["id"],
+        owner_username=current_user["minecraft_username"],
+        listed_at=datetime.now(timezone.utc).isoformat(),
+        status="pending",
+        admin_approved=False
+    )
+    await db.houses.insert_one(house.model_dump())
+    return {"message": "House listed successfully. Waiting for admin approval.", "house_id": house.id}
+
+@api_router.get("/houses")
+async def get_houses(status: Optional[str] = "available"):
+    query = {}
+    if status:
+        query["status"] = status
+    query["admin_approved"] = True
+    houses = await db.houses.find(query, {"_id": 0}).to_list(1000)
+    return {"houses": houses}
+
+@api_router.get("/houses/pending")
+async def get_pending_houses(current_user: dict = Depends(get_admin_user)):
+    houses = await db.houses.find({"admin_approved": False}, {"_id": 0}).to_list(1000)
+    return {"houses": houses}
+
+@api_router.post("/houses/{house_id}/approve")
+async def approve_house(house_id: str, current_user: dict = Depends(get_admin_user)):
+    result = await db.houses.update_one(
+        {"id": house_id},
+        {"$set": {"admin_approved": True, "status": "available"}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="House not found")
     
-    # Transfer
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "APPROVE_HOUSE",
+        f"House ID: {house_id}"
+    )
+    
+    return {"message": "House approved"}
+
+@api_router.delete("/houses/{house_id}")
+async def delete_house(house_id: str, current_user: dict = Depends(get_admin_user)):
+    result = await db.houses.delete_one({"id": house_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="House not found")
+    
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "DELETE_HOUSE",
+        f"House ID: {house_id}"
+    )
+    
+    return {"message": "House deleted"}
+
+@api_router.post("/houses/{house_id}/buy")
+async def buy_house(house_id: str, payment_type: str, payment_currency: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    house = await db.houses.find_one({"id": house_id}, {"_id": 0})
+    if not house:
+        raise HTTPException(status_code=404, detail="House not found")
+    
+    if house["status"] != "available":
+        raise HTTPException(status_code=400, detail="House not available")
+    
+    if payment_type == "currency":
+        if not house.get("price_currency"):
+            raise HTTPException(status_code=400, detail="Currency payment not available")
+        
+        # Allow payment with any currency
+        if not payment_currency or payment_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+            payment_currency = current_user["currency_type"]
+        
+        required_amount = house["price_currency"].get(payment_currency, 0)
+        
+        if current_user["balances"][payment_currency] < required_amount:
+            raise HTTPException(status_code=400, detail="Insufficient balance")
+        
+        # Create title deed
+        title_deed = TitleDeed(
+            house_id=house_id,
+            house_name=house["name"],
+            owner_id=current_user["id"],
+            owner_username=current_user["minecraft_username"],
+            previous_owner_id=house.get("owner_id"),
+            previous_owner_username=house.get("owner_username"),
+            purchase_price=required_amount,
+            purchase_currency=payment_currency,
+            issued_date=datetime.now(timezone.utc).isoformat(),
+            location=house["location"]
+        )
+        
+        await db.title_deeds.insert_one(title_deed.model_dump())
+        
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {
+                "$inc": {f"balances.{payment_currency}": -required_amount, "total_transactions": 1},
+                "$push": {"owned_houses": house_id}
+            }
+        )
+        
+        await db.houses.update_one(
+            {"id": house_id},
+            {
+                "$set": {
+                    "status": "sold",
+                    "sold_at": datetime.now(timezone.utc).isoformat(),
+                    "owner_id": current_user["id"],
+                    "owner_username": current_user["minecraft_username"],
+                    "title_deed_id": title_deed.id
+                }
+            }
+        )
+        
+        return {
+            "message": "House purchased successfully! Title deed issued.",
+            "title_deed_id": title_deed.id
+        }
+    
+    return {"message": "USD payment requires Stripe checkout", "amount": house.get("price_usd", 0)}
+
+# Bounty Routes  
+@api_router.post("/bounties")
+async def create_bounty(bounty_data: BountyCreate, current_user: dict = Depends(get_current_user)):
+    if current_user["balances"][bounty_data.reward_currency] < bounty_data.reward_amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+    
     await db.users.update_one(
         {"id": current_user["id"]},
+        {"$inc": {f"balances.{bounty_data.reward_currency}": -bounty_data.reward_amount}}
+    )
+    
+    bounty = Bounty(
+        **bounty_data.model_dump(),
+        creator_id=current_user["id"],
+        creator_username=current_user["minecraft_username"],
+        created_at=datetime.now(timezone.utc).isoformat()
+    )
+    
+    await db.bounties.insert_one(bounty.model_dump())
+    return {"message": "Bounty created successfully", "bounty_id": bounty.id}
+
+@api_router.get("/bounties")
+async def get_bounties(bounty_type: Optional[str] = None, status: str = "active"):
+    query = {"status": status}
+    if bounty_type:
+        query["bounty_type"] = bounty_type
+    bounties = await db.bounties.find(query, {"_id": 0}).to_list(1000)
+    return {"bounties": bounties}
+
+@api_router.post("/bounties/{bounty_id}/complete")
+async def complete_bounty(bounty_id: str, current_user: dict = Depends(get_current_user)):
+    bounty = await db.bounties.find_one({"id": bounty_id}, {"_id": 0})
+    if not bounty:
+        raise HTTPException(status_code=404, detail="Bounty not found")
+    
+    if bounty["status"] != "active":
+        raise HTTPException(status_code=400, detail="Bounty not active")
+    
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$inc": {f"balances.{bounty['reward_currency']}": bounty["reward_amount"], "total_transactions": 1}}
+    )
+    
+    await db.bounties.update_one(
+        {"id": bounty_id},
         {
-            "$inc": {
-                f"portfolio.{transfer.symbol}": -transfer.quantity,
-                f"balances.{currency}": -commission
+            "$set": {
+                "status": "completed",
+                "completed_by": current_user["id"],
+                "completed_by_username": current_user["minecraft_username"],
+                "completed_at": datetime.now(timezone.utc).isoformat()
             }
         }
     )
     
-    await db.users.update_one(
-        {"id": recipient["id"]},
-        {"$inc": {f"portfolio.{transfer.symbol}": transfer.quantity}}
+    return {"message": "Bounty completed successfully"}
+
+@api_router.delete("/bounties/{bounty_id}")
+async def delete_bounty(bounty_id: str, current_user: dict = Depends(get_admin_user)):
+    result = await db.bounties.delete_one({"id": bounty_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Bounty not found")
+    
+    await log_admin_action(
+        current_user["minecraft_username"],
+        "DELETE_BOUNTY",
+        f"Bounty ID: {bounty_id}"
     )
     
-    # Log
+    return {"message": "Bounty deleted"}
+
+# Currency Conversion Routes
+@api_router.post("/currency/convert")
+async def convert_currency(conversion: CurrencyConversion, current_user: dict = Depends(get_current_user)):
+    if conversion.from_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid source currency")
+    if conversion.to_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid target currency")
+    if conversion.from_currency == conversion.to_currency:
+        raise HTTPException(status_code=400, detail="Cannot convert to same currency")
+    if conversion.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    
+    # Check balance
+    if current_user["balances"][conversion.from_currency] < conversion.amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+    
+    # Get exchange rates
+    rates = await get_currency_rates()
+    
+    # Convert to GRP first, then to target currency
+    grp_amount = conversion.amount
+    if conversion.from_currency != "GRP":
+        rate_key = f"GRP_TO_{conversion.from_currency}"
+        grp_amount = conversion.amount / rates[rate_key]
+    
+    # Convert from GRP to target
+    target_amount = grp_amount
+    if conversion.to_currency != "GRP":
+        rate_key = f"GRP_TO_{conversion.to_currency}"
+        target_amount = grp_amount * rates[rate_key]
+    
+    # Update balances
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {
+                f"balances.{conversion.from_currency}": -conversion.amount,
+                f"balances.{conversion.to_currency}": target_amount,
+                "total_transactions": 1
+            }
+        }
+    )
+    
+    return {
+        "message": "Currency converted successfully",
+        "from_amount": conversion.amount,
+        "from_currency": conversion.from_currency,
+        "to_amount": target_amount,
+        "to_currency": conversion.to_currency,
+        "exchange_rate": target_amount / conversion.amount
+    }
+
+@api_router.get("/title-deeds")
+async def get_my_title_deeds(current_user: dict = Depends(get_current_user)):
+    deeds = await db.title_deeds.find({"owner_id": current_user["id"]}, {"_id": 0}).to_list(1000)
+    return {"title_deeds": deeds}
+
+@api_router.get("/title-deeds/{deed_id}")
+async def get_title_deed(deed_id: str, current_user: dict = Depends(get_current_user)):
+    deed = await db.title_deeds.find_one({"id": deed_id}, {"_id": 0})
+    if not deed:
+        raise HTTPException(status_code=404, detail="Title deed not found")
+    if deed["owner_id"] != current_user["id"] and not current_user.get("is_admin", False):
+        raise HTTPException(status_code=403, detail="Not authorized to view this title deed")
+    return deed
+
+# Leaderboard Routes
+@api_router.get("/leaderboard/richest")
+async def get_richest_players(currency: str = "NIM", limit: int = 10):
+    users = await db.users.find({}, {"_id": 0, "minecraft_username": 1, f"balances.{currency}": 1, "currency_type": 1}).to_list(1000)
+    sorted_users = sorted(users, key=lambda x: x.get("balances", {}).get(currency, 0), reverse=True)[:limit]
+    return {"leaderboard": sorted_users}
+
+@api_router.get("/leaderboard/traders")
+async def get_top_traders(limit: int = 10):
+    users = await db.users.find(
+        {},
+        {"_id": 0, "minecraft_username": 1, "total_transactions": 1, "total_spent": 1}
+    ).to_list(1000)
+    sorted_users = sorted(users, key=lambda x: x.get("total_transactions", 0), reverse=True)[:limit]
+    return {"leaderboard": sorted_users}
+
+@api_router.get("/leaderboard/house-owners")
+async def get_house_owners(limit: int = 10):
+    users = await db.users.find(
+        {"owned_houses": {"$exists": True, "$ne": []}},
+        {"_id": 0, "minecraft_username": 1, "owned_houses": 1}
+    ).to_list(1000)
+    users_with_count = [{**u, "house_count": len(u.get("owned_houses", []))} for u in users]
+    sorted_users = sorted(users_with_count, key=lambda x: x["house_count"], reverse=True)[:limit]
+    return {"leaderboard": sorted_users}
+
+# Stripe Payment Routes
+@api_router.post("/checkout/session")
+async def create_checkout_session(request: Request, checkout_req: CheckoutRequest, current_user: dict = Depends(get_current_user)):
+    try:
+        host_url = str(request.base_url).rstrip('/')
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        
+        origin = request.headers.get("origin", host_url)
+        success_url = f"{origin}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{origin}/marketplace"
+        
+        rates = await get_currency_rates()
+        amount = 0.0
+        metadata = {
+            "user_id": current_user["id"],
+            "username": current_user["minecraft_username"],
+            "package_type": checkout_req.package_type,
+            "package_id": checkout_req.package_id
+        }
+        
+        if checkout_req.package_type == "currency":
+            # Allow buying any currency, not just user's server currency
+            if checkout_req.currency_type not in ["NIM", "GRP", "VDD", "KKD"]:
+                raise HTTPException(status_code=400, detail="Invalid currency type")
+            
+            grp_amount = checkout_req.quantity
+            if checkout_req.currency_type != "GRP":
+                rate_key = f"GRP_TO_{checkout_req.currency_type}"
+                grp_amount = checkout_req.quantity / rates[rate_key]
+            
+            amount = grp_amount * rates["GRP_TO_USD"]
+            metadata["currency_type"] = checkout_req.currency_type
+            metadata["quantity"] = str(checkout_req.quantity)
+            metadata["user_server_currency"] = current_user["currency_type"]
+            
+        elif checkout_req.package_type == "rank":
+            if checkout_req.package_id not in RANK_PRICES:
+                raise HTTPException(status_code=400, detail="Invalid rank")
+            amount = RANK_PRICES[checkout_req.package_id]
+        
+        checkout_request = CheckoutSessionRequest(
+            amount=amount,
+            currency="usd",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata,
+            payment_methods=['card']
+        )
+        
+        session = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        payment_record = {
+            "id": str(uuid.uuid4()),
+            "session_id": session.session_id,
+            "user_id": current_user["id"],
+            "username": current_user["minecraft_username"],
+            "amount": amount,
+            "currency": "usd",
+            "metadata": metadata,
+            "payment_status": "pending",
+            "status": "initiated",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.payment_transactions.insert_one(payment_record)
+        
+        return {"url": session.url, "session_id": session.session_id}
+        
+    except Exception as e:
+        logging.error(f"Checkout error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        payment = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+        if not payment:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        
+        if payment["payment_status"] == "paid":
+            return {
+                "status": payment["status"],
+                "payment_status": payment["payment_status"],
+                "message": "Payment already processed"
+            }
+        
+        host_url = "https://pixeltraders.preview.emergentagent.com"
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        
+        checkout_status = await stripe_checkout.get_checkout_status(session_id)
+        
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {"$set": {
+                "status": checkout_status.status,
+                "payment_status": checkout_status.payment_status,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        if checkout_status.payment_status == "paid":
+            metadata = payment["metadata"]
+            
+            if metadata["package_type"] == "currency":
+                currency_type = metadata["currency_type"]
+                quantity = float(metadata["quantity"])
+                
+                await db.users.update_one(
+                    {"id": payment["user_id"]},
+                    {
+                        "$inc": {
+                            f"balances.{currency_type}": quantity,
+                            "total_spent": payment["amount"],
+                            "total_transactions": 1
+                        }
+                    }
+                )
+                
+            elif metadata["package_type"] == "rank":
+                rank_name = metadata["package_id"]
+                await db.users.update_one(
+                    {"id": payment["user_id"]},
+                    {
+                        "$addToSet": {"owned_ranks": rank_name},
+                        "$inc": {"total_spent": payment["amount"], "total_transactions": 1}
+                    }
+                )
+        
+        return {
+            "status": checkout_status.status,
+            "payment_status": checkout_status.payment_status,
+            "amount_total": checkout_status.amount_total,
+            "currency": checkout_status.currency
+        }
+        
+    except Exception as e:
+        logging.error(f"Status check error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    try:
+        body = await request.body()
+        signature = request.headers.get("Stripe-Signature")
+        
+        host_url = str(request.base_url).rstrip('/')
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        
+        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+        
+        if webhook_response.payment_status == "paid":
+            await db.payment_transactions.update_one(
+                {"session_id": webhook_response.session_id},
+                {"$set": {
+                    "payment_status": "paid",
+                    "status": "complete",
+                    "webhook_received_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+        
+        return {"status": "success"}
+        
+    except Exception as e:
+        logging.error(f"Webhook error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Investment Routes
+@api_router.get("/investments")
+async def get_investments(current_user: dict = Depends(get_current_user)):
+    investments = await db.investments.find({}, {"_id": 0}).to_list(1000)
+    return {"investments": investments}
+
+@api_router.get("/exchange-rates")
+async def get_exchange_rates_matrix():
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
+    if rates_doc:
+        return {"rates": rates_doc.get("rates", {})}
+    return {"rates": {}}
+
+@api_router.post("/investments/buy")
+async def buy_investment(symbol: str, quantity: float, current_user: dict = Depends(get_current_user)):
+    # Get investment
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    
+    currency = investment["currency"]
+    price = investment["current_price"]
+    total = price * quantity
+    commission = total * 0.00001  # 0.001%
+    final_amount = total + commission
+    
+    # Check balance
+    if current_user["balances"][currency] < final_amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+    
+    # Update user balance and portfolio
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {
+                f"balances.{currency}": -final_amount,
+                f"portfolio.{symbol}": quantity,
+                "total_transactions": 1
+            }
+        }
+    )
+    
+    # Record transaction
     transaction = {
         "id": str(uuid.uuid4()),
-        "type": "investment_transfer",
-        "sender_id": current_user["id"],
-        "sender_username": current_user["minecraft_username"],
-        "recipient_id": recipient["id"],
-        "recipient_username": recipient["minecraft_username"],
-        "symbol": transfer.symbol,
-        "quantity": transfer.quantity,
-        "value": value,
+        "user_id": current_user["id"],
+        "username": current_user["minecraft_username"],
+        "symbol": symbol,
+        "transaction_type": "buy",
+        "quantity": quantity,
+        "price_per_unit": price,
+        "total_amount": total,
         "commission": commission,
         "currency": currency,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     await db.investment_transactions.insert_one(transaction)
     
-    return {"message": f"Transferred {transfer.quantity} shares of {transfer.symbol}", "commission": commission}
+    return {"message": "Purchase successful", "transaction": transaction}
 
-# Continue with remaining routes in next message due to length...
+@api_router.post("/investments/sell")
+async def sell_investment(symbol: str, quantity: float, current_user: dict = Depends(get_current_user)):
+    # Check if user owns this stock
+    portfolio = current_user.get("portfolio", {})
+    owned = portfolio.get(symbol, 0)
+    
+    if owned < quantity:
+        raise HTTPException(status_code=400, detail="Insufficient shares")
+    
+    # Get investment
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    
+    currency = investment["currency"]
+    price = investment["current_price"]
+    total = price * quantity
+    commission = total * 0.00001  # 0.001%
+    final_amount = total - commission
+    
+    # Update user balance and portfolio
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$inc": {
+                f"balances.{currency}": final_amount,
+                f"portfolio.{symbol}": -quantity,
+                "total_transactions": 1
+            }
+        }
+    )
+    
+    # Record transaction
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "username": current_user["minecraft_username"],
+        "symbol": symbol,
+        "transaction_type": "sell",
+        "quantity": quantity,
+        "price_per_unit": price,
+        "total_amount": total,
+        "commission": commission,
+        "currency": currency,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.investment_transactions.insert_one(transaction)
+    
+    return {"message": "Sale successful", "transaction": transaction}
+
+# Include the router in the main app
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
