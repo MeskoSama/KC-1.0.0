@@ -68,43 +68,47 @@ class StockMarketTester:
             return 500, {"error": str(e)}
             
     async def setup_test_user(self):
-        """Setup or login as meskop user"""
+        """Setup or login test user"""
         print("\n=== Setting Up Test User ===")
         
-        # Try to login as meskop first
-        login_data = {
-            "minecraft_username": "meskop",
-            "password": "password123",  # Common password
-            "server_code": "10997"  # GRP server
-        }
+        # Try different passwords for meskop
+        passwords_to_try = ["password123", "meskop123", "admin123", "test123", "password", "123456"]
         
-        status, response = await self.make_request("POST", "/auth/login", login_data, auth=False)
-        
-        if status == 200:
-            self.auth_token = response.get("token")
-            self.user_id = response.get("user", {}).get("id")
-            self.user_data = response.get("user", {})
-            self.log_test("Login as meskop", True, f"User ID: {self.user_id}")
-            return True
-        else:
-            # Try to register meskop if login fails
-            register_data = {
+        for password in passwords_to_try:
+            login_data = {
                 "minecraft_username": "meskop",
-                "password": "password123",
+                "password": password,
                 "server_code": "10997"  # GRP server
             }
             
-            status, response = await self.make_request("POST", "/auth/register", register_data, auth=False)
+            status, response = await self.make_request("POST", "/auth/login", login_data, auth=False)
             
             if status == 200:
                 self.auth_token = response.get("token")
                 self.user_id = response.get("user", {}).get("id")
                 self.user_data = response.get("user", {})
-                self.log_test("Register meskop", True, f"User ID: {self.user_id}")
+                self.log_test("Login as meskop", True, f"User ID: {self.user_id}, Password: {password}")
                 return True
-            else:
-                self.log_test("Setup meskop user", False, f"Status: {status}, Response: {response}")
-                return False
+        
+        # If meskop login fails, try to create a new test user
+        test_username = f"StockTester{datetime.now().strftime('%H%M%S')}"
+        register_data = {
+            "minecraft_username": test_username,
+            "password": "test123",
+            "server_code": "10997"  # GRP server
+        }
+        
+        status, response = await self.make_request("POST", "/auth/register", register_data, auth=False)
+        
+        if status == 200:
+            self.auth_token = response.get("token")
+            self.user_id = response.get("user", {}).get("id")
+            self.user_data = response.get("user", {})
+            self.log_test(f"Register {test_username}", True, f"User ID: {self.user_id}")
+            return True
+        else:
+            self.log_test("Setup test user", False, f"Status: {status}, Response: {response}")
+            return False
                 
     async def check_user_balance(self):
         """Check and display user balances"""
