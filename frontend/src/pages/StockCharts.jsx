@@ -324,7 +324,7 @@ const StockCharts = ({ user, onLogout }) => {
                       <BarChart3 className="text-purple-400" size={32} />
                       <div>
                         <div className="text-2xl font-black text-purple-400">{selectedStock.symbol}</div>
-                        <div className="text-sm text-slate-400 font-normal">{selectedStock.name}</div>
+                        <div className="text-sm text-red-500 font-medium">{selectedStock.name}</div>
                       </div>
                     </div>
                     <div className="text-right">
