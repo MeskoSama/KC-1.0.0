@@ -267,6 +267,32 @@ agent_communication:
     - Professional UI with loading states and empty states
     
     All services are running. Ready for comprehensive testing."
+    
+  - agent: "main"
+    message: "USER REQUEST - Stock Market Setup Complete:
+    
+    **Admin Configuration:**
+    ✅ Confirmed meskop as admin user (already set)
+    
+    **Stock Market Population:**
+    ✅ Added 24 new stocks to the database:
+       - VDD: 4 stocks (Berlin Goverment, Elçilik, BerlinsBuilds, Hazine Bonosu)
+       - NIM: 10 stocks (Gov NE, Falco, BİGport, Delta, Ankara, PortMetro, SakuraBank, ArdaX, Mbuilds, Hazine Bonosu)
+       - KKD: 5 stocks (Gov Erenium, Cordoba, Cordoba Bank, F-Build, Hazine Bonosu)
+       - GRP: 5 stocks (Germania Gov, BOSO, Baweryan City, Germania Bank, Hazine Bonosu)
+    
+    **UI Enhancement:**
+    ✅ Stock names now displayed in RED COLOR on:
+       - Investments page (main trading table)
+       - Portfolio page (investment breakdown)
+    
+    **Files Modified:**
+    - /app/backend/add_stocks.py (created - stock insertion script)
+    - /app/frontend/src/pages/Investments.jsx (red color for stock names)
+    - /app/frontend/src/pages/Portfolio.jsx (red color for stock names)
+    - /app/STOCKS_SUMMARY.md (created - complete stock documentation)
+    
+    All 24 stocks are now live and tradeable! Stock names appear in red for better visibility."
   - agent: "testing"
     message: "🎯 COMPREHENSIVE BACKEND TESTING COMPLETED - ALL SYSTEMS OPERATIONAL
     
