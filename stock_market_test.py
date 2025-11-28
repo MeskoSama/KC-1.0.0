@@ -264,12 +264,9 @@ class StockMarketTester:
             symbol = expensive_stock.get("symbol")
             
             # Try to buy 1000000 shares (should be too expensive)
-            buy_data = {
-                "symbol": symbol,
-                "quantity": 1000000
-            }
+            endpoint = f"/investments/buy?symbol={symbol}&quantity=1000000"
             
-            status, response = await self.make_request("POST", "/investments/buy", buy_data)
+            status, response = await self.make_request("POST", endpoint, None)
             
             if status == 400 and "Insufficient balance" in response.get("detail", ""):
                 self.log_test("Insufficient Balance Error", True, "Correctly rejected expensive purchase")
