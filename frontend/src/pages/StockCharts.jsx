@@ -16,6 +16,8 @@ const StockCharts = ({ user, onLogout }) => {
   const [viewCurrency, setViewCurrency] = useState(user.currency_type);
   const [chartData, setChartData] = useState([]);
   const [currencyChartData, setCurrencyChartData] = useState([]);
+  const [marketOverview, setMarketOverview] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadInvestments();
