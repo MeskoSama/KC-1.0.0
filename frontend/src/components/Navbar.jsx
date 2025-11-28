@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, ShoppingCart, Target, Trophy, Building2, LogOut, Shield, ArrowRightLeft, TrendingUp, History, Wallet } from 'lucide-react';
+import { Home, ShoppingCart, Target, Trophy, Building2, LogOut, Shield, ArrowRightLeft, TrendingUp, History, Wallet, LineChart } from 'lucide-react';
 
 export const Navbar = ({ user, onLogout }) => {
   const location = useLocation();
