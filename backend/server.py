@@ -1352,6 +1352,334 @@ async def get_investment_price_history(symbol: str, current_user: dict = Depends
         "price_history": investment.get("price_history", [])
     }
 
+
+# Transaction History & Activity Feed Routes
+@api_router.get("/transactions/history")
+async def get_transaction_history(
+    current_user: dict = Depends(get_current_user),
+    transaction_type: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0
+):
+    """Get user's transaction history across all activities"""
+    user_id = current_user["id"]
+    
+    # Collect all transactions
+    all_transactions = []
+    
+    # Payment transactions
+    payment_txns = await db.payment_transactions.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    for txn in payment_txns:
+        all_transactions.append({
+            "id": txn.get("id"),
+            "type": "payment",
+            "action": f"Purchased {txn.get('metadata', {}).get('package_type', 'item')}",
+            "amount": txn.get("amount", 0),
+            "currency": "USD",
+            "status": txn.get("payment_status", "pending"),
+            "timestamp": txn.get("created_at"),
+            "details": txn.get("metadata", {})
+        })
+    
+    # Investment transactions
+    investment_txns = await db.investment_transactions.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(1000)
+    
+    for txn in investment_txns:
+        action = "Bought" if txn.get("transaction_type") == "buy" else "Sold"
+        all_transactions.append({
+            "id": txn.get("id"),
+            "type": "investment",
+            "action": f"{action} {txn.get('quantity')} shares of {txn.get('symbol')}",
+            "amount": txn.get("total_amount", 0),
+            "currency": txn.get("currency", "GRP"),
+            "status": "completed",
+            "timestamp": txn.get("timestamp"),
+            "details": {
+                "symbol": txn.get("symbol"),
+                "quantity": txn.get("quantity"),
+                "price_per_unit": txn.get("price_per_unit"),
+                "commission": txn.get("commission")
+            }
+        })
+    
+    # House purchases (from title deeds)
+    title_deeds = await db.title_deeds.find(
+        {"owner_id": user_id},
+        {"_id": 0}
+    ).sort("issued_date", -1).to_list(1000)
+    
+    for deed in title_deeds:
+        all_transactions.append({
+            "id": deed.get("id"),
+            "type": "property",
+            "action": f"Purchased {deed.get('house_name')}",
+            "amount": deed.get("purchase_price", 0),
+            "currency": deed.get("purchase_currency", "GRP"),
+            "status": "completed",
+            "timestamp": deed.get("issued_date"),
+            "details": {
+                "house_name": deed.get("house_name"),
+                "location": deed.get("location"),
+                "previous_owner": deed.get("previous_owner_username")
+            }
+        })
+    
+    # Bounties created
+    bounties_created = await db.bounties.find(
+        {"creator_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    for bounty in bounties_created:
+        all_transactions.append({
+            "id": bounty.get("id"),
+            "type": "bounty_create",
+            "action": f"Created bounty: {bounty.get('title')}",
+            "amount": -bounty.get("reward_amount", 0),
+            "currency": bounty.get("reward_currency", "GRP"),
+            "status": bounty.get("status", "active"),
+            "timestamp": bounty.get("created_at"),
+            "details": {
+                "title": bounty.get("title"),
+                "bounty_type": bounty.get("bounty_type"),
+                "target": bounty.get("target_player")
+            }
+        })
+    
+    # Bounties completed
+    bounties_completed = await db.bounties.find(
+        {"completed_by": user_id},
+        {"_id": 0}
+    ).sort("completed_at", -1).to_list(1000)
+    
+    for bounty in bounties_completed:
+        all_transactions.append({
+            "id": bounty.get("id"),
+            "type": "bounty_complete",
+            "action": f"Completed bounty: {bounty.get('title')}",
+            "amount": bounty.get("reward_amount", 0),
+            "currency": bounty.get("reward_currency", "GRP"),
+            "status": "completed",
+            "timestamp": bounty.get("completed_at"),
+            "details": {
+                "title": bounty.get("title"),
+                "creator": bounty.get("creator_username")
+            }
+        })
+    
+    # Sort all transactions by timestamp
+    all_transactions.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
+    # Filter by type if specified
+    if transaction_type:
+        all_transactions = [t for t in all_transactions if t["type"] == transaction_type]
+    
+    # Apply pagination
+    total = len(all_transactions)
+    paginated = all_transactions[skip:skip + limit]
+    
+    return {
+        "transactions": paginated,
+        "total": total,
+        "limit": limit,
+        "skip": skip
+    }
+
+@api_router.get("/activity/feed")
+async def get_activity_feed(limit: int = 20, skip: int = 0):
+    """Get recent activity across the platform"""
+    activities = []
+    
+    # Recent house sales
+    recent_houses = await db.houses.find(
+        {"status": "sold"},
+        {"_id": 0}
+    ).sort("sold_at", -1).limit(10).to_list(10)
+    
+    for house in recent_houses:
+        activities.append({
+            "type": "house_sale",
+            "message": f"{house.get('owner_username')} purchased {house.get('name')}",
+            "timestamp": house.get("sold_at"),
+            "icon": "home"
+        })
+    
+    # Recent bounties
+    recent_bounties = await db.bounties.find(
+        {},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    for bounty in recent_bounties:
+        if bounty.get("status") == "completed":
+            activities.append({
+                "type": "bounty_completed",
+                "message": f"{bounty.get('completed_by_username')} completed bounty: {bounty.get('title')}",
+                "timestamp": bounty.get("completed_at"),
+                "icon": "target"
+            })
+        else:
+            activities.append({
+                "type": "bounty_created",
+                "message": f"{bounty.get('creator_username')} created bounty: {bounty.get('title')}",
+                "timestamp": bounty.get("created_at"),
+                "icon": "target"
+            })
+    
+    # Recent user registrations
+    recent_users = await db.users.find(
+        {},
+        {"_id": 0, "minecraft_username": 1, "created_at": 1, "currency_type": 1}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    
+    for user in recent_users:
+        activities.append({
+            "type": "user_joined",
+            "message": f"{user.get('minecraft_username')} joined {user.get('currency_type')} server",
+            "timestamp": user.get("created_at"),
+            "icon": "user"
+        })
+    
+    # Sort by timestamp
+    activities.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
+    # Apply pagination
+    total = len(activities)
+    paginated = activities[skip:skip + limit]
+    
+    return {
+        "activities": paginated,
+        "total": total
+    }
+
+@api_router.get("/portfolio/summary")
+async def get_portfolio_summary(current_user: dict = Depends(get_current_user)):
+    """Get comprehensive portfolio summary with calculated values"""
+    user_id = current_user["id"]
+    
+    # Calculate total currency value in GRP
+    rates = await get_currency_rates()
+    total_currency_value = 0.0
+    currency_breakdown = {}
+    
+    for currency, balance in current_user["balances"].items():
+        if balance > 0:
+            # Convert to GRP
+            if currency == "GRP":
+                grp_value = balance
+            else:
+                rate_key = f"GRP_TO_{currency}"
+                grp_value = balance / rates[rate_key]
+            
+            total_currency_value += grp_value
+            currency_breakdown[currency] = {
+                "balance": balance,
+                "grp_value": grp_value
+            }
+    
+    # Calculate investment portfolio value
+    portfolio = current_user.get("portfolio", {})
+    investments_value = 0.0
+    investment_breakdown = []
+    
+    for symbol, quantity in portfolio.items():
+        if quantity > 0:
+            investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+            if investment:
+                current_price = investment["current_price"]
+                currency = investment["currency"]
+                total_value = current_price * quantity
+                
+                # Convert to GRP
+                if currency == "GRP":
+                    grp_value = total_value
+                else:
+                    rate_key = f"GRP_TO_{currency}"
+                    grp_value = total_value / rates[rate_key]
+                
+                investments_value += grp_value
+                investment_breakdown.append({
+                    "symbol": symbol,
+                    "name": investment["name"],
+                    "quantity": quantity,
+                    "current_price": current_price,
+                    "currency": currency,
+                    "total_value": total_value,
+                    "grp_value": grp_value
+                })
+    
+    # Calculate property value
+    owned_houses = current_user.get("owned_houses", [])
+    properties_value = 0.0
+    property_breakdown = []
+    
+    for house_id in owned_houses:
+        house = await db.houses.find_one({"id": house_id}, {"_id": 0})
+        if house:
+            # Get original purchase price from title deed
+            title_deed = await db.title_deeds.find_one(
+                {"house_id": house_id, "owner_id": user_id},
+                {"_id": 0}
+            )
+            
+            if title_deed:
+                price = title_deed["purchase_price"]
+                currency = title_deed["purchase_currency"]
+                
+                # Convert to GRP
+                if currency == "GRP":
+                    grp_value = price
+                else:
+                    rate_key = f"GRP_TO_{currency}"
+                    grp_value = price / rates[rate_key]
+                
+                properties_value += grp_value
+                property_breakdown.append({
+                    "id": house_id,
+                    "name": house["name"],
+                    "location": house.get("location"),
+                    "purchase_price": price,
+                    "currency": currency,
+                    "grp_value": grp_value,
+                    "building_type": house.get("building_type", "House")
+                })
+    
+    # Total net worth in GRP
+    total_net_worth = total_currency_value + investments_value + properties_value
+    
+    # Convert total to USD for reference
+    usd_value = total_net_worth * rates["GRP_TO_USD"]
+    
+    return {
+        "net_worth": {
+            "total_grp": total_net_worth,
+            "total_usd": usd_value,
+            "currency_value": total_currency_value,
+            "investments_value": investments_value,
+            "properties_value": properties_value
+        },
+        "breakdown": {
+            "currencies": currency_breakdown,
+            "investments": investment_breakdown,
+            "properties": property_breakdown
+        },
+        "stats": {
+            "total_spent": current_user.get("total_spent", 0),
+            "total_transactions": current_user.get("total_transactions", 0),
+            "owned_ranks": len(current_user.get("owned_ranks", [])),
+            "owned_houses": len(owned_houses),
+            "active_investments": len([q for q in portfolio.values() if q > 0])
+        }
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
