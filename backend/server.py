@@ -265,23 +265,47 @@ def create_jwt_token(user_id: str, username: str, role: str = "user") -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get current authenticated user (any role)"""
     try:
         token = credentials.credentials
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        
+        # Check if user is banned
+        if user.get("banned", False):
+            raise HTTPException(status_code=403, detail="Account banned")
+        
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    user = await get_current_user(credentials)
-    if not user.get("is_admin", False):
+# New role-based dependencies
+async def require_user(user: dict = Depends(get_current_user)):
+    """Require authenticated user (any role)"""
+    return user
+
+async def require_admin(user: dict = Depends(get_current_user)):
+    """Require admin or superadmin role"""
+    role = user.get("role", "user")
+    if role not in ["admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
+
+async def require_superadmin(user: dict = Depends(get_current_user)):
+    """Require superadmin role only"""
+    role = user.get("role", "user")
+    if role != "superadmin":
+        raise HTTPException(status_code=403, detail="Superadmin access required")
+    return user
+
+# DEPRECATED: Keep for backward compatibility during transition
+async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """DEPRECATED: Use require_admin instead"""
+    return await require_admin(await get_current_user(credentials))
 
 # Auth Routes
 @api_router.post("/auth/register")
