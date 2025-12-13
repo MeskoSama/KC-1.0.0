@@ -245,6 +245,30 @@ class UserCurrencyUpdate(BaseModel):
     user_id: str
     new_currency_type: str
 
+
+# Admin investment management models
+class StockCreate(BaseModel):
+    symbol: str
+    name: str
+    currency: str
+    current_price: float
+
+class StockNameUpdate(BaseModel):
+    symbol: str
+    new_name: str
+
+class StockPriceUpdate(BaseModel):
+    symbol: str
+    new_price: float
+
+class StockCurrencyUpdate(BaseModel):
+    symbol: str
+    new_currency: str
+
+class StockStatusUpdate(BaseModel):
+    symbol: str
+    disabled: bool
+
     operation: str  # "add" or "set"
 
 # Utility Functions
