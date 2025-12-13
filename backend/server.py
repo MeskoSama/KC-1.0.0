@@ -318,19 +318,20 @@ async def register(data: UserRegister):
         raise HTTPException(status_code=400, detail="Username already exists")
     
     currency_type = SERVER_CODES[data.server_code]
-    is_admin = data.minecraft_username in ADMIN_USERNAMES
     
     user = User(
         minecraft_username=data.minecraft_username,
         password_hash=hash_password(data.password),
         server_code=data.server_code,
         currency_type=currency_type,
-        is_admin=is_admin,
+        role="user",  # All new users start as regular users
+        banned=False,
+        is_admin=False,  # Keep for backward compatibility
         created_at=datetime.now(timezone.utc).isoformat()
     )
     
     await db.users.insert_one(user.model_dump())
-    token = create_jwt_token(user.id, user.minecraft_username, is_admin)
+    token = create_jwt_token(user.id, user.minecraft_username, user.role)
     
     return {
         "message": "User registered successfully",
@@ -340,7 +341,8 @@ async def register(data: UserRegister):
             "username": user.minecraft_username,
             "currency_type": user.currency_type,
             "balances": user.balances,
-            "is_admin": is_admin
+            "role": user.role,
+            "is_admin": False  # For backward compatibility
         }
     }
 
