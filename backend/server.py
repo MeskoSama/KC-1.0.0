@@ -234,6 +234,20 @@ class UserBalanceUpdate(BaseModel):
     user_id: str
     currency: str
     amount: float
+
+# Admin operation models
+class UserRoleUpdate(BaseModel):
+    user_id: str
+    new_role: str  # user, admin, superadmin
+
+class UserBanUpdate(BaseModel):
+    user_id: str
+    banned: bool
+
+class UserCurrencyUpdate(BaseModel):
+    user_id: str
+    new_currency_type: str
+
     operation: str  # "add" or "set"
 
 # Utility Functions
