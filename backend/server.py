@@ -352,17 +352,18 @@ async def login(data: UserLogin):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check if user is banned
+    if user.get("banned", False):
+        raise HTTPException(status_code=403, detail="Account has been banned")
+    
     if user["server_code"] != data.server_code:
         raise HTTPException(status_code=401, detail="Invalid server code")
     
     if not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    is_admin = user.get("is_admin", False) or data.minecraft_username in ADMIN_USERNAMES
-    if is_admin and not user.get("is_admin", False):
-        await db.users.update_one({"id": user["id"]}, {"$set": {"is_admin": True}})
-    
-    token = create_jwt_token(user["id"], user["minecraft_username"], is_admin)
+    role = user.get("role", "user")
+    token = create_jwt_token(user["id"], user["minecraft_username"], role)
     
     return {
         "message": "Login successful",
@@ -374,7 +375,8 @@ async def login(data: UserLogin):
             "balances": user["balances"],
             "owned_ranks": user.get("owned_ranks", []),
             "owned_houses": user.get("owned_houses", []),
-            "is_admin": is_admin
+            "role": role,
+            "is_admin": role in ["admin", "superadmin"]  # For backward compatibility
         }
     }
 
