@@ -1987,6 +1987,217 @@ async def get_admin_logs(admin: dict = Depends(require_admin), limit: int = 100)
     }
 
 
+
+# ============================================================================
+# ADMIN INVESTMENT MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@api_router.post("/admin/investment/create")
+async def create_stock(data: StockCreate, admin: dict = Depends(require_admin)):
+    """Create a new stock (admin/superadmin only)"""
+    # Check if stock already exists
+    existing = await db.investments.find_one({"symbol": data.symbol})
+    if existing:
+        raise HTTPException(status_code=400, detail="Stock symbol already exists")
+    
+    # Validate currency
+    if data.currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid currency")
+    
+    # Create investment document
+    investment = {
+        "id": str(uuid.uuid4()),
+        "symbol": data.symbol,
+        "name": data.name,
+        "currency": data.currency,
+        "current_price": data.current_price,
+        "price_history": [
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "price": data.current_price,
+                "old_price": 0,
+                "change": 0
+            }
+        ],
+        "disabled": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_updated": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.investments.insert_one(investment)
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Stock created",
+        f"Created {data.symbol}: {data.name} at {data.current_price} {data.currency}"
+    )
+    
+    return {
+        "message": "Stock created successfully",
+        "stock": {
+            "id": investment["id"],
+            "symbol": data.symbol,
+            "name": data.name,
+            "currency": data.currency,
+            "current_price": data.current_price
+        }
+    }
+
+@api_router.put("/admin/investment/name")
+async def update_stock_name(data: StockNameUpdate, admin: dict = Depends(require_admin)):
+    """Update stock name (admin/superadmin only)"""
+    investment = await db.investments.find_one({"symbol": data.symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    
+    old_name = investment["name"]
+    
+    await db.investments.update_one(
+        {"symbol": data.symbol},
+        {
+            "$set": {
+                "name": data.new_name,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Stock name updated",
+        f"{data.symbol}: '{old_name}' → '{data.new_name}'"
+    )
+    
+    return {
+        "message": "Stock name updated successfully",
+        "symbol": data.symbol,
+        "old_name": old_name,
+        "new_name": data.new_name
+    }
+
+@api_router.put("/admin/investment/price")
+async def update_stock_price(data: StockPriceUpdate, admin: dict = Depends(require_admin)):
+    """Update stock price and add to price_history (admin/superadmin only)"""
+    investment = await db.investments.find_one({"symbol": data.symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    
+    old_price = investment["current_price"]
+    price_change = ((data.new_price - old_price) / old_price) * 100 if old_price > 0 else 0
+    
+    # Create price history entry
+    price_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "price": data.new_price,
+        "old_price": old_price,
+        "change": round(price_change, 2)
+    }
+    
+    # Update investment
+    await db.investments.update_one(
+        {"symbol": data.symbol},
+        {
+            "$set": {
+                "current_price": data.new_price,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            },
+            "$push": {"price_history": price_entry}
+        }
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Stock price updated",
+        f"{data.symbol}: {old_price} → {data.new_price} ({price_change:+.2f}%)"
+    )
+    
+    return {
+        "message": "Stock price updated successfully",
+        "symbol": data.symbol,
+        "old_price": old_price,
+        "new_price": data.new_price,
+        "change_percent": round(price_change, 2)
+    }
+
+@api_router.put("/admin/investment/currency")
+async def update_stock_currency(data: StockCurrencyUpdate, admin: dict = Depends(require_admin)):
+    """Change stock currency (admin/superadmin only)"""
+    if data.new_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid currency")
+    
+    investment = await db.investments.find_one({"symbol": data.symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    
+    old_currency = investment["currency"]
+    
+    await db.investments.update_one(
+        {"symbol": data.symbol},
+        {
+            "$set": {
+                "currency": data.new_currency,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Stock currency updated",
+        f"{data.symbol}: {old_currency} → {data.new_currency}"
+    )
+    
+    return {
+        "message": "Stock currency updated successfully",
+        "symbol": data.symbol,
+        "old_currency": old_currency,
+        "new_currency": data.new_currency
+    }
+
+@api_router.put("/admin/investment/status")
+async def update_stock_status(data: StockStatusUpdate, admin: dict = Depends(require_admin)):
+    """Enable or disable stock (soft delete) (admin/superadmin only)"""
+    investment = await db.investments.find_one({"symbol": data.symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    
+    await db.investments.update_one(
+        {"symbol": data.symbol},
+        {
+            "$set": {
+                "disabled": data.disabled,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    status_text = "disabled" if data.disabled else "enabled"
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        f"Stock {status_text}",
+        f"{data.symbol}: {investment['name']}"
+    )
+    
+    return {
+        "message": f"Stock {status_text} successfully",
+        "symbol": data.symbol,
+        "disabled": data.disabled
+    }
+
+@api_router.get("/admin/investment/list")
+async def list_all_stocks(admin: dict = Depends(require_admin), include_disabled: bool = False):
+    """List all stocks with optional disabled filter (admin/superadmin only)"""
+    query = {} if include_disabled else {"disabled": {"$ne": True}}
+    
+    stocks = await db.investments.find(query, {"_id": 0}).to_list(1000)
+    
+    return {
+        "stocks": stocks,
+        "total": len(stocks)
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
