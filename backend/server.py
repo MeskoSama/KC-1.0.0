@@ -29,9 +29,6 @@ JWT_ALGORITHM = "HS256"
 # Stripe
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
 
-# Admin users
-ADMIN_USERNAMES = ["TestMiner", "meskop"]
-
 # Create the main app without a prefix
 app = FastAPI()
 
