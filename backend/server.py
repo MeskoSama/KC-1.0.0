@@ -992,6 +992,10 @@ async def buy_investment(symbol: str, quantity: float, current_user: dict = Depe
     if not investment:
         raise HTTPException(status_code=404, detail="Investment not found")
     
+    # Check if stock is disabled
+    if investment.get("disabled", False):
+        raise HTTPException(status_code=403, detail="This stock is currently disabled")
+    
     currency = investment["currency"]
     price = investment["current_price"]
     total = price * quantity
