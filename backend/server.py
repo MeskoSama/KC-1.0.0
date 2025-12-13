@@ -254,11 +254,12 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-def create_jwt_token(user_id: str, username: str, is_admin: bool = False) -> str:
+def create_jwt_token(user_id: str, username: str, role: str = "user") -> str:
+    """Create JWT token with user role"""
     payload = {
         "user_id": user_id,
         "username": username,
-        "is_admin": is_admin,
+        "role": role,
         "exp": datetime.now(timezone.utc) + timedelta(days=30)
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
