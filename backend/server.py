@@ -973,7 +973,9 @@ async def stripe_webhook(request: Request):
 # Investment Routes
 @api_router.get("/investments")
 async def get_investments(current_user: dict = Depends(get_current_user)):
-    investments = await db.investments.find({}, {"_id": 0}).to_list(1000)
+    # Exclude disabled stocks for regular users
+    query = {"disabled": {"$ne": True}}
+    investments = await db.investments.find(query, {"_id": 0}).to_list(1000)
     return {"investments": investments}
 
 @api_router.get("/exchange-rates")
