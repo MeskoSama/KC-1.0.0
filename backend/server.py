@@ -134,7 +134,9 @@ class User(BaseModel):
     owned_houses: List[str] = Field(default_factory=list)
     total_spent: float = 0.0
     total_transactions: int = 0
-    is_admin: bool = False
+    is_admin: bool = False  # DEPRECATED: Use 'role' field instead
+    role: str = "user"  # user, admin, superadmin
+    banned: bool = False
     created_at: str
 
 class UserRegister(BaseModel):
