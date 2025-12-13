@@ -1814,6 +1814,155 @@ async def get_market_overview(current_user: dict = Depends(get_current_user)):
 
 
 
+
+# ============================================================================
+# NEW ADMIN USER MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@api_router.post("/admin/users/ban")
+async def ban_user(data: UserBanUpdate, admin: dict = Depends(require_admin)):
+    """Ban or unban a user (admin/superadmin only)"""
+    target_user = await db.users.find_one({"id": data.user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent banning superadmins
+    if target_user.get("role") == "superadmin":
+        raise HTTPException(status_code=403, detail="Cannot ban a superadmin")
+    
+    # Regular admins can't ban other admins (only superadmins can)
+    if admin.get("role") == "admin" and target_user.get("role") == "admin":
+        raise HTTPException(status_code=403, detail="Only superadmins can ban admins")
+    
+    await db.users.update_one(
+        {"id": data.user_id},
+        {"$set": {"banned": data.banned}}
+    )
+    
+    action = "banned" if data.banned else "unbanned"
+    await log_admin_action(
+        admin["minecraft_username"],
+        f"User {action}",
+        f"User {target_user['minecraft_username']} (ID: {data.user_id})"
+    )
+    
+    return {
+        "message": f"User successfully {action}",
+        "user_id": data.user_id,
+        "banned": data.banned
+    }
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, admin: dict = Depends(require_superadmin)):
+    """Delete a user permanently (superadmin only)"""
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent deleting superadmins (even by other superadmins)
+    if target_user.get("role") == "superadmin":
+        raise HTTPException(status_code=403, detail="Cannot delete a superadmin")
+    
+    # Delete user
+    await db.users.delete_one({"id": user_id})
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "User deleted",
+        f"User {target_user['minecraft_username']} (ID: {user_id}) permanently deleted"
+    )
+    
+    return {
+        "message": "User deleted successfully",
+        "user_id": user_id
+    }
+
+@api_router.put("/admin/users/role")
+async def change_user_role(data: UserRoleUpdate, admin: dict = Depends(require_superadmin)):
+    """Change user role (superadmin only)"""
+    if data.new_role not in ["user", "admin", "superadmin"]:
+        raise HTTPException(status_code=400, detail="Invalid role. Must be: user, admin, or superadmin")
+    
+    target_user = await db.users.find_one({"id": data.user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update role
+    await db.users.update_one(
+        {"id": data.user_id},
+        {"$set": {"role": data.new_role}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Role changed",
+        f"User {target_user['minecraft_username']} role changed to {data.new_role}"
+    )
+    
+    return {
+        "message": "User role updated successfully",
+        "user_id": data.user_id,
+        "new_role": data.new_role
+    }
+
+@api_router.put("/admin/users/currency")
+async def change_user_currency(data: UserCurrencyUpdate, admin: dict = Depends(require_admin)):
+    """Change user's primary currency (admin/superadmin only)"""
+    if data.new_currency_type not in ["NIM", "GRP", "VDD", "KKD"]:
+        raise HTTPException(status_code=400, detail="Invalid currency type")
+    
+    target_user = await db.users.find_one({"id": data.user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"id": data.user_id},
+        {"$set": {"currency_type": data.new_currency_type}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Currency changed",
+        f"User {target_user['minecraft_username']} currency changed to {data.new_currency_type}"
+    )
+    
+    return {
+        "message": "User currency updated successfully",
+        "user_id": data.user_id,
+        "new_currency_type": data.new_currency_type
+    }
+
+@api_router.get("/admin/users/list")
+async def list_all_users(admin: dict = Depends(require_admin), skip: int = 0, limit: int = 50):
+    """List all users with pagination (admin/superadmin only)"""
+    users = await db.users.find(
+        {},
+        {"_id": 0, "password_hash": 0}  # Exclude sensitive data
+    ).skip(skip).limit(limit).to_list(limit)
+    
+    total = await db.users.count_documents({})
+    
+    return {
+        "users": users,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@api_router.get("/admin/logs")
+async def get_admin_logs(admin: dict = Depends(require_admin), limit: int = 100):
+    """Get recent admin action logs (admin/superadmin only)"""
+    logs = await db.admin_logs.find(
+        {},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    return {
+        "logs": logs,
+        "total": len(logs)
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
