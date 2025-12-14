@@ -1067,7 +1067,14 @@ async def get_exchange_rates_matrix():
     return {"rates": {}}
 
 @api_router.post("/investments/buy")
-async def buy_investment(symbol: str, quantity: float, current_user: dict = Depends(get_current_user)):
+async def buy_investment(order: InvestmentOrder, current_user: dict = Depends(get_current_user)):
+    symbol = order.symbol
+    quantity = order.quantity
+    
+    # Validate quantity
+    if quantity <= 0:
+        raise HTTPException(status_code=400, detail="Quantity must be positive")
+    
     # Get investment
     investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
     if not investment:
@@ -1083,9 +1090,10 @@ async def buy_investment(symbol: str, quantity: float, current_user: dict = Depe
     commission = total * 0.00001  # 0.001%
     final_amount = total + commission
     
-    # Check balance
-    if current_user["balances"][currency] < final_amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
+    # Check balance - ensure currency exists in user balances
+    user_balance = current_user.get("balances", {}).get(currency, 0)
+    if user_balance < final_amount:
+        raise HTTPException(status_code=400, detail=f"Insufficient {currency} balance. Need {final_amount:.2f}, have {user_balance:.2f}")
     
     # Update user balance and portfolio
     await db.users.update_one(
@@ -1118,13 +1126,20 @@ async def buy_investment(symbol: str, quantity: float, current_user: dict = Depe
     return {"message": "Purchase successful", "transaction": transaction}
 
 @api_router.post("/investments/sell")
-async def sell_investment(symbol: str, quantity: float, current_user: dict = Depends(get_current_user)):
+async def sell_investment(order: InvestmentOrder, current_user: dict = Depends(get_current_user)):
+    symbol = order.symbol
+    quantity = order.quantity
+    
+    # Validate quantity
+    if quantity <= 0:
+        raise HTTPException(status_code=400, detail="Quantity must be positive")
+    
     # Check if user owns this stock
     portfolio = current_user.get("portfolio", {})
     owned = portfolio.get(symbol, 0)
     
     if owned < quantity:
-        raise HTTPException(status_code=400, detail="Insufficient shares")
+        raise HTTPException(status_code=400, detail=f"Insufficient shares. Own {owned}, trying to sell {quantity}")
     
     # Get investment
     investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
