@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import uuid
 
 # Configuration
-BASE_URL = "https://repo-viewer-22.preview.emergentagent.com/api"
+BASE_URL = "https://code-fixer-104.preview.emergentagent.com/api"
 TEST_USER_DATA = {
     "minecraft_username": f"TestUser{uuid.uuid4().hex[:8]}",
     "password": "SecurePassword123!",

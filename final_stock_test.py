@@ -8,7 +8,7 @@ import asyncio
 import aiohttp
 import json
 
-BASE_URL = "https://repo-viewer-22.preview.emergentagent.com/api"
+BASE_URL = "https://code-fixer-104.preview.emergentagent.com/api"
 
 class FinalStockTester:
     def __init__(self):

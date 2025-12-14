@@ -7,7 +7,7 @@ import asyncio
 import aiohttp
 import json
 
-BASE_URL = "https://repo-viewer-22.preview.emergentagent.com/api"
+BASE_URL = "https://code-fixer-104.preview.emergentagent.com/api"
 
 async def test_admin_login():
     """Try to login as admin users"""

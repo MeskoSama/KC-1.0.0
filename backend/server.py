@@ -888,7 +888,7 @@ async def get_checkout_status(session_id: str, current_user: dict = Depends(get_
                 "message": "Payment already processed"
             }
         
-        host_url = "https://repo-viewer-22.preview.emergentagent.com"
+        host_url = "https://code-fixer-104.preview.emergentagent.com"
         webhook_url = f"{host_url}/api/webhook/stripe"
         stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
         
