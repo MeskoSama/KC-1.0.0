@@ -110,6 +110,7 @@ async def initialize_price_history():
     print("\n🌐 Initializing currency exchange rate history...")
     
     base_rates = {
+        "GRP_TO_EP": 112.43700,
         "GRP_TO_NIM": 1.68700,
         "GRP_TO_VDD": 2.36666,
         "GRP_TO_KKD": 2.61455,
