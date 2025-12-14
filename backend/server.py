@@ -188,7 +188,7 @@ class User(BaseModel):
     password_hash: str
     server_code: str
     currency_type: str
-    balances: Dict[str, float] = Field(default_factory=lambda: {"NIM": 0, "GRP": 0, "VDD": 0, "KKD": 0})
+    balances: Dict[str, float] = Field(default_factory=lambda: {"NIM": 0, "GRP": 0, "VDD": 0, "KKD": 0, "EP": 0, "EGD": 0})
     owned_ranks: List[str] = Field(default_factory=list)
     owned_houses: List[str] = Field(default_factory=list)
     total_spent: float = 0.0
