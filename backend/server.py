@@ -2250,7 +2250,9 @@ async def update_stock_price(data: StockPriceUpdate, admin: dict = Depends(requi
 @api_router.put("/admin/investment/currency")
 async def update_stock_currency(data: StockCurrencyUpdate, admin: dict = Depends(require_admin)):
     """Change stock currency (admin/superadmin only)"""
-    if data.new_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+    # Get available currencies dynamically
+    available = await get_available_currencies()
+    if data.new_currency not in available:
         raise HTTPException(status_code=400, detail="Invalid currency")
     
     investment = await db.investments.find_one({"symbol": data.symbol}, {"_id": 0})
