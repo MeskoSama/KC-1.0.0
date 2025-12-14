@@ -45,13 +45,75 @@ SERVER_CODES = {
     "90154": "KKD"
 }
 
+# All available currencies in the system
+ALL_CURRENCIES = ["NIM", "GRP", "VDD", "KKD", "EP", "EGD"]
+
+# Currency display names
+CURRENCY_NAMES = {
+    "NIM": "NIM",
+    "GRP": "GRP", 
+    "VDD": "VDD",
+    "KKD": "KKD",
+    "EP": "EP",  # Evrensel Para (Universal Money)
+    "EGD": "EGD"  # Egoslavya Dinar
+}
+
 # Currency exchange rates (base: GRP)
 # 1 GRP = X other currency
 DEFAULT_CURRENCY_RATES = {
     "GRP_TO_NIM": 1.68700,
     "GRP_TO_VDD": 2.36666,
     "GRP_TO_KKD": 2.61455,
+    "GRP_TO_EP": 112.43750,
+    "GRP_TO_EGD": 118.05937,
     "GRP_TO_USD": 0.000245
+}
+
+# Full exchange rate matrix - all currency pairs
+# These rates are: 1 FROM_CURRENCY = X TO_CURRENCY
+DEFAULT_EXCHANGE_MATRIX = {
+    # GRP conversions
+    "GRP_TO_GRP": 1.0,
+    "GRP_TO_NIM": 1.68700,
+    "GRP_TO_VDD": 2.36666,
+    "GRP_TO_KKD": 2.61455,
+    "GRP_TO_EP": 112.43750,
+    "GRP_TO_EGD": 118.05937,
+    # NIM conversions (1 NIM = X)
+    "NIM_TO_GRP": 0.59277,  # 1/1.687
+    "NIM_TO_NIM": 1.0,
+    "NIM_TO_VDD": 1.40288,  # 2.36666/1.687
+    "NIM_TO_KKD": 1.54977,  # 2.61455/1.687
+    "NIM_TO_EP": 66.64500,
+    "NIM_TO_EGD": 69.97725,
+    # VDD conversions (1 VDD = X)
+    "VDD_TO_GRP": 0.42253,  # 1/2.36666
+    "VDD_TO_NIM": 0.71281,  # 1.687/2.36666
+    "VDD_TO_VDD": 1.0,
+    "VDD_TO_KKD": 1.10476,  # 2.61455/2.36666
+    "VDD_TO_EP": 47.50900,
+    "VDD_TO_EGD": 49.88445,
+    # KKD conversions (1 KKD = X)
+    "KKD_TO_GRP": 0.38248,  # 1/2.61455
+    "KKD_TO_NIM": 0.64522,  # 1.687/2.61455
+    "KKD_TO_VDD": 0.90514,  # 2.36666/2.61455
+    "KKD_TO_KKD": 1.0,
+    "KKD_TO_EP": 43.01000,
+    "KKD_TO_EGD": 45.16050,
+    # EP conversions (1 EP = X)
+    "EP_TO_GRP": 0.00889,  # 1/112.4375
+    "EP_TO_NIM": 0.01501,  # 1/66.645
+    "EP_TO_VDD": 0.02105,  # 1/47.509
+    "EP_TO_KKD": 0.02325,  # 1/43.01
+    "EP_TO_EP": 1.0,
+    "EP_TO_EGD": 1.05000,
+    # EGD conversions (1 EGD = X)
+    "EGD_TO_GRP": 0.00847,  # 1/118.05937
+    "EGD_TO_NIM": 0.01429,  # 1/69.97725
+    "EGD_TO_VDD": 0.02005,  # 1/49.88445
+    "EGD_TO_KKD": 0.02214,  # 1/45.1605
+    "EGD_TO_EP": 0.95238,
+    "EGD_TO_EGD": 1.0
 }
 
 # Rank prices
