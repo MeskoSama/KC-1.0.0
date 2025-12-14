@@ -269,7 +269,26 @@ class StockStatusUpdate(BaseModel):
     symbol: str
     disabled: bool
 
-    operation: str  # "add" or "set"
+# Investment order model for buy/sell
+class InvestmentOrder(BaseModel):
+    symbol: str
+    quantity: float
+
+# Currency management models
+class CurrencyCreate(BaseModel):
+    code: str  # e.g., "EP", "EGD"
+    name: str  # e.g., "Evrensel Para", "Egoslavya Dinar"
+    base_rate_to_grp: float  # How many of this currency = 1 GRP
+
+class CurrencyUpdate(BaseModel):
+    code: str
+    name: Optional[str] = None
+    base_rate_to_grp: Optional[float] = None
+
+class ExchangeRateUpdate(BaseModel):
+    from_currency: str
+    to_currency: str
+    rate: float
 
 # Utility Functions
 def hash_password(password: str) -> str:
