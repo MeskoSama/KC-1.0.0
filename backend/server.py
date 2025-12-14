@@ -150,23 +150,56 @@ async def get_exchange_rate(from_currency: str, to_currency: str) -> float:
     # Get exchange rate matrix
     rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
     if not rates_doc:
-        # Fallback to old method if matrix not found
-        rates = await get_currency_rates()
-        grp_amount = 1.0
-        if from_currency != "GRP":
-            rate_key = f"GRP_TO_{from_currency}"
-            grp_amount = 1.0 / rates.get(rate_key, 1)
-        target_amount = grp_amount
-        if to_currency != "GRP":
-            rate_key = f"GRP_TO_{to_currency}"
-            target_amount = grp_amount * rates.get(rate_key, 1)
-        return target_amount
+        # Fallback to default matrix
+        rate_key = f"{from_currency}_TO_{to_currency}"
+        return DEFAULT_EXCHANGE_MATRIX.get(rate_key, 1.0)
     
     # Use direct conversion from matrix
     rate_key = f"{from_currency}_TO_{to_currency}"
     exchange_rates = rates_doc.get("rates", {})
     
-    return exchange_rates.get(rate_key, 1.0)
+    return exchange_rates.get(rate_key, DEFAULT_EXCHANGE_MATRIX.get(rate_key, 1.0))
+
+async def get_available_currencies():
+    """Get list of all available currencies from database"""
+    currencies_doc = await db.currencies.find_one({"id": "currency_list"}, {"_id": 0})
+    if currencies_doc:
+        return currencies_doc.get("currencies", ALL_CURRENCIES)
+    return ALL_CURRENCIES
+
+async def get_currency_info():
+    """Get all currency information including names"""
+    currencies_doc = await db.currencies.find_one({"id": "currency_list"}, {"_id": 0})
+    if currencies_doc:
+        return {
+            "currencies": currencies_doc.get("currencies", ALL_CURRENCIES),
+            "names": currencies_doc.get("names", CURRENCY_NAMES)
+        }
+    return {
+        "currencies": ALL_CURRENCIES,
+        "names": CURRENCY_NAMES
+    }
+
+async def initialize_exchange_matrix():
+    """Initialize exchange rate matrix in database if not exists"""
+    existing = await db.exchange_rates.find_one({"id": "exchange_matrix"})
+    if not existing:
+        await db.exchange_rates.insert_one({
+            "id": "exchange_matrix",
+            "rates": DEFAULT_EXCHANGE_MATRIX,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+async def initialize_currencies():
+    """Initialize currencies in database if not exists"""
+    existing = await db.currencies.find_one({"id": "currency_list"})
+    if not existing:
+        await db.currencies.insert_one({
+            "id": "currency_list",
+            "currencies": ALL_CURRENCIES,
+            "names": CURRENCY_NAMES,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
 
 
 async def log_admin_action(admin_username: str, action: str, details: str):
