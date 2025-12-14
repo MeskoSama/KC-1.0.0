@@ -794,9 +794,12 @@ async def delete_bounty(bounty_id: str, current_user: dict = Depends(get_admin_u
 # Currency Conversion Routes
 @api_router.post("/currency/convert")
 async def convert_currency(conversion: CurrencyConversion, current_user: dict = Depends(get_current_user)):
-    if conversion.from_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+    # Get all available currencies from database or use defaults
+    available_currencies = await get_available_currencies()
+    
+    if conversion.from_currency not in available_currencies:
         raise HTTPException(status_code=400, detail="Invalid source currency")
-    if conversion.to_currency not in ["NIM", "GRP", "VDD", "KKD"]:
+    if conversion.to_currency not in available_currencies:
         raise HTTPException(status_code=400, detail="Invalid target currency")
     if conversion.from_currency == conversion.to_currency:
         raise HTTPException(status_code=400, detail="Cannot convert to same currency")
@@ -804,23 +807,13 @@ async def convert_currency(conversion: CurrencyConversion, current_user: dict = 
         raise HTTPException(status_code=400, detail="Amount must be positive")
     
     # Check balance
-    if current_user["balances"][conversion.from_currency] < conversion.amount:
+    user_balance = current_user.get("balances", {}).get(conversion.from_currency, 0)
+    if user_balance < conversion.amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
-    # Get exchange rates
-    rates = await get_currency_rates()
-    
-    # Convert to GRP first, then to target currency
-    grp_amount = conversion.amount
-    if conversion.from_currency != "GRP":
-        rate_key = f"GRP_TO_{conversion.from_currency}"
-        grp_amount = conversion.amount / rates[rate_key]
-    
-    # Convert from GRP to target
-    target_amount = grp_amount
-    if conversion.to_currency != "GRP":
-        rate_key = f"GRP_TO_{conversion.to_currency}"
-        target_amount = grp_amount * rates[rate_key]
+    # Get exchange rate directly from matrix
+    rate = await get_exchange_rate(conversion.from_currency, conversion.to_currency)
+    target_amount = conversion.amount * rate
     
     # Update balances
     await db.users.update_one(
@@ -840,7 +833,7 @@ async def convert_currency(conversion: CurrencyConversion, current_user: dict = 
         "from_currency": conversion.from_currency,
         "to_amount": target_amount,
         "to_currency": conversion.to_currency,
-        "exchange_rate": target_amount / conversion.amount
+        "exchange_rate": rate
     }
 
 @api_router.get("/title-deeds")
