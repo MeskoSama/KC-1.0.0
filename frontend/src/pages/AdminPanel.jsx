@@ -282,6 +282,8 @@ const AdminPanel = ({ user, onLogout }) => {
                           <SelectItem value="GRP">GRP</SelectItem>
                           <SelectItem value="VDD">VDD</SelectItem>
                           <SelectItem value="KKD">KKD</SelectItem>
+                          <SelectItem value="EP">EP</SelectItem>
+                          <SelectItem value="EGD">EGD</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
