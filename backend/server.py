@@ -566,7 +566,9 @@ async def update_user_balance(update: UserBalanceUpdate, current_user: dict = De
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if update.currency not in ["NIM", "GRP", "VDD", "KKD"]:
+    # Get available currencies dynamically
+    available = await get_available_currencies()
+    if update.currency not in available:
         raise HTTPException(status_code=400, detail="Invalid currency")
     
     if update.operation == "add":
