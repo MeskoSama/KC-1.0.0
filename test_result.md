@@ -282,39 +282,46 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Test transaction history endpoint with various filters"
-    - "Test portfolio summary calculations"
-    - "Test new frontend pages (Portfolio, Transaction History)"
-    - "Verify navigation between pages"
-    - "Test missing get_exchange_rate function in house purchases"
+    - "Test fixed stock buy/sell endpoints with JSON body"
+    - "Test new currencies (EP, EGD) in exchange system"
+    - "Test admin currency management endpoints"
+    - "Test currency conversion with all 6 currencies"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Fixed critical missing get_exchange_rate function and implemented comprehensive improvements:
+    message: "MAJOR UPDATE - Bug Fixes and New Features:
     
-    **Backend Enhancements:**
-    1. Fixed get_exchange_rate helper function for currency conversions
-    2. Added /api/transactions/history endpoint (aggregates all user transactions)
-    3. Added /api/activity/feed endpoint (platform-wide recent activities)
-    4. Added /api/portfolio/summary endpoint (net worth calculations and breakdowns)
+    **Bug Fixes:**
+    1. FIXED: Stock buy/sell endpoints now accept JSON body (was query params, causing frontend issues)
+       - Changed buy_investment and sell_investment to use InvestmentOrder Pydantic model
+       - Frontend sends: POST /api/investments/buy with body {\"symbol\": \"...\", \"quantity\": N}
+       - TESTED: Successfully bought and sold stocks via API
     
-    **Frontend Enhancements:**
-    1. Created Transaction History page with filtering and status badges
-    2. Created Portfolio page with net worth display and detailed breakdowns
-    3. Updated navigation to include new pages
-    4. Enhanced dashboard with quick access links
+    **New Currencies Added:**
+    2. Added EP (Evrensel Para/Universal Money) - 1 GRP = 112.4375 EP
+    3. Added EGD (Egoslavya Dinar) - 1 GRP = 118.05937 EGD, 1 EP = 1.05 EGD
     
-    **Key Features Added:**
-    - Complete transaction tracking across all activities
-    - Portfolio value calculation in GRP with USD conversion
-    - Activity feed showing platform events
-    - Tabbed interface for currencies, investments, and properties
-    - Professional UI with loading states and empty states
+    **New Admin Endpoints:**
+    4. GET /api/currencies - Public list of all currencies with names
+    5. GET /api/currencies/rates - Full exchange rate matrix (36 rates for 6 currencies)
+    6. POST /api/admin/currencies - Add new currency
+    7. PUT /api/admin/currencies - Update currency name/rate
+    8. DELETE /api/admin/currencies/{code} - Remove non-base currency
+    9. PUT /api/admin/exchange-rate/direct - Update specific exchange rate
+    10. POST /api/admin/currencies/initialize - Reset to defaults
+    11. POST /api/admin/users/migrate-balances - Add EP/EGD to all users
     
-    All services are running. Ready for comprehensive testing."
+    **Frontend Updates:**
+    12. Created AdminCurrencyManagement.jsx - Full currency management UI
+    13. Updated AdminPanel.jsx - Added Currencies tab
+    14. Updated Investments.jsx - Added EP/EGD to currency filters
+    15. Updated CurrencyExchange.jsx - Added EP/EGD to conversion options
+    16. Updated AdminPanel.jsx users table - Shows all 6 currencies
+    
+    Ready for backend testing of new endpoints."
     
   - agent: "main"
     message: "USER REQUEST - Stock Market Setup Complete:
