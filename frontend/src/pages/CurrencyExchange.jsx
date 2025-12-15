@@ -103,7 +103,7 @@ const CurrencyExchange = ({ user, onLogout, onUpdateUser }) => {
     setToCurrency(fromCurrency);
   };
 
-  const currencies = ['NIM', 'GRP', 'VDD', 'KKD'];
+  const currencies = ['NIM', 'GRP', 'VDD', 'KKD', 'EP', 'EGD'];
 
   return (
     <div className="kapitalist-bg min-h-screen pb-12">
