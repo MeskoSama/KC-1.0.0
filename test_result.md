@@ -102,9 +102,57 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Germania Empire Minecraft Marketplace - A full-featured economy platform for Minecraft server with multi-currency support, real estate marketplace, investments, bounties, and Stripe payment integration. User requested fixes and improvements to make it production-ready."
+user_problem_statement: "Germania Empire Minecraft Marketplace - A full-featured economy platform for Minecraft server with multi-currency support, real estate marketplace, investments, bounties, and Stripe payment integration. User requested fixes and improvements to make it production-ready. Latest fix: Stock buy/sell bug, added EP and EGD currencies, comprehensive admin currency management."
 
 backend:
+  - task: "Fix stock buy/sell endpoint to accept JSON body"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Fixed buy_investment and sell_investment endpoints to use InvestmentOrder Pydantic model instead of query params. Frontend sends JSON body with symbol and quantity."
+  
+  - task: "Add EP and EGD currencies"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added EP (Evrensel Para) and EGD (Egoslavya Dinar) currencies with full exchange rate matrix. EP rates: 1 GRP = 112.4375 EP. EGD rates: 1 GRP = 118.05937 EGD, 1 EP = 1.05 EGD."
+  
+  - task: "Centralized currency management system"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created comprehensive currency management: /api/currencies (public list), /api/currencies/rates (full matrix), /api/admin/currencies (CRUD), /api/admin/exchange-rate/direct (update specific rates), /api/admin/currencies/initialize (reset to defaults)."
+  
+  - task: "Admin currency management endpoints"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added: POST /admin/currencies (add currency), PUT /admin/currencies (update name/rate), DELETE /admin/currencies/{code} (remove non-base currency), PUT /admin/exchange-rate/direct (update specific rate), POST /admin/users/migrate-balances (add EP/EGD to all users)."
+
   - task: "Add missing get_exchange_rate helper function"
     implemented: true
     working: true
