@@ -166,6 +166,8 @@ const Investments = ({ user, onLogout, onUpdateUser }) => {
                 <SelectItem value="GRP">GRP</SelectItem>
                 <SelectItem value="VDD">VDD</SelectItem>
                 <SelectItem value="KKD">KKD</SelectItem>
+                <SelectItem value="EP">EP</SelectItem>
+                <SelectItem value="EGD">EGD</SelectItem>
               </SelectContent>
             </Select>
             <Select value={viewCurrency} onValueChange={setViewCurrency}>
@@ -177,6 +179,8 @@ const Investments = ({ user, onLogout, onUpdateUser }) => {
                 <SelectItem value="GRP">View in GRP</SelectItem>
                 <SelectItem value="VDD">View in VDD</SelectItem>
                 <SelectItem value="KKD">View in KKD</SelectItem>
+                <SelectItem value="EP">View in EP</SelectItem>
+                <SelectItem value="EGD">View in EGD</SelectItem>
               </SelectContent>
             </Select>
           </div>
