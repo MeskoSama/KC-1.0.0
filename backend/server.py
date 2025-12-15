@@ -2328,6 +2328,332 @@ async def list_all_stocks(admin: dict = Depends(require_admin), include_disabled
     }
 
 
+# ============================================================================
+# CURRENCY MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@api_router.get("/currencies")
+async def get_currencies():
+    """Get all available currencies with their display names (public endpoint)"""
+    info = await get_currency_info()
+    return info
+
+@api_router.get("/currencies/rates")
+async def get_all_exchange_rates():
+    """Get complete exchange rate matrix (public endpoint)"""
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
+    if rates_doc:
+        return {"rates": rates_doc.get("rates", DEFAULT_EXCHANGE_MATRIX)}
+    return {"rates": DEFAULT_EXCHANGE_MATRIX}
+
+@api_router.post("/admin/currencies")
+async def add_currency(data: CurrencyCreate, admin: dict = Depends(require_admin)):
+    """Add a new currency to the system (admin only)"""
+    # Get current currencies
+    currencies_doc = await db.currencies.find_one({"id": "currency_list"})
+    
+    if currencies_doc:
+        currencies = currencies_doc.get("currencies", [])
+        names = currencies_doc.get("names", {})
+    else:
+        currencies = list(ALL_CURRENCIES)
+        names = dict(CURRENCY_NAMES)
+    
+    # Check if currency already exists
+    if data.code.upper() in currencies:
+        raise HTTPException(status_code=400, detail="Currency already exists")
+    
+    # Add new currency
+    new_code = data.code.upper()
+    currencies.append(new_code)
+    names[new_code] = data.name
+    
+    # Update currencies collection
+    await db.currencies.update_one(
+        {"id": "currency_list"},
+        {
+            "$set": {
+                "currencies": currencies,
+                "names": names,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    # Add exchange rates for new currency
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"})
+    if rates_doc:
+        rates = rates_doc.get("rates", {})
+    else:
+        rates = dict(DEFAULT_EXCHANGE_MATRIX)
+    
+    # Calculate rates based on GRP base rate
+    for existing_currency in currencies:
+        if existing_currency == new_code:
+            rates[f"{new_code}_TO_{new_code}"] = 1.0
+        else:
+            # Get GRP rate for existing currency
+            grp_to_existing = rates.get(f"GRP_TO_{existing_currency}", 1.0)
+            
+            # New currency to existing: (1/base_rate_to_grp) * grp_to_existing
+            new_to_existing = (1.0 / data.base_rate_to_grp) * grp_to_existing
+            rates[f"{new_code}_TO_{existing_currency}"] = new_to_existing
+            
+            # Existing to new currency: inverse
+            existing_to_new = 1.0 / new_to_existing if new_to_existing != 0 else 0
+            rates[f"{existing_currency}_TO_{new_code}"] = existing_to_new
+    
+    # Add GRP to new currency rate
+    rates[f"GRP_TO_{new_code}"] = data.base_rate_to_grp
+    rates[f"{new_code}_TO_GRP"] = 1.0 / data.base_rate_to_grp if data.base_rate_to_grp != 0 else 0
+    
+    # Update exchange rates
+    await db.exchange_rates.update_one(
+        {"id": "exchange_matrix"},
+        {"$set": {"rates": rates, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Currency added",
+        f"Code: {new_code}, Name: {data.name}, GRP Rate: {data.base_rate_to_grp}"
+    )
+    
+    return {
+        "message": "Currency added successfully",
+        "currency": {
+            "code": new_code,
+            "name": data.name,
+            "base_rate_to_grp": data.base_rate_to_grp
+        }
+    }
+
+@api_router.put("/admin/currencies")
+async def update_currency(data: CurrencyUpdate, admin: dict = Depends(require_admin)):
+    """Update currency name or rate (admin only)"""
+    currencies_doc = await db.currencies.find_one({"id": "currency_list"})
+    
+    if not currencies_doc:
+        raise HTTPException(status_code=404, detail="Currency system not initialized")
+    
+    currencies = currencies_doc.get("currencies", [])
+    names = currencies_doc.get("names", {})
+    
+    if data.code not in currencies:
+        raise HTTPException(status_code=404, detail="Currency not found")
+    
+    # Update name if provided
+    if data.name is not None:
+        old_name = names.get(data.code, data.code)
+        names[data.code] = data.name
+        await db.currencies.update_one(
+            {"id": "currency_list"},
+            {"$set": {"names": names, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        await log_admin_action(
+            admin["minecraft_username"],
+            "Currency name updated",
+            f"{data.code}: '{old_name}' → '{data.name}'"
+        )
+    
+    # Update rate if provided
+    if data.base_rate_to_grp is not None:
+        rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"})
+        rates = rates_doc.get("rates", {}) if rates_doc else dict(DEFAULT_EXCHANGE_MATRIX)
+        
+        old_rate = rates.get(f"GRP_TO_{data.code}", 1.0)
+        
+        # Update all rates involving this currency
+        for currency in currencies:
+            if currency == data.code:
+                continue
+            
+            # Get GRP rate for other currency
+            grp_to_other = rates.get(f"GRP_TO_{currency}", 1.0)
+            
+            # Update data.code to other
+            new_to_other = (1.0 / data.base_rate_to_grp) * grp_to_other if data.base_rate_to_grp != 0 else 0
+            rates[f"{data.code}_TO_{currency}"] = new_to_other
+            
+            # Update other to data.code
+            rates[f"{currency}_TO_{data.code}"] = 1.0 / new_to_other if new_to_other != 0 else 0
+        
+        rates[f"GRP_TO_{data.code}"] = data.base_rate_to_grp
+        rates[f"{data.code}_TO_GRP"] = 1.0 / data.base_rate_to_grp if data.base_rate_to_grp != 0 else 0
+        
+        await db.exchange_rates.update_one(
+            {"id": "exchange_matrix"},
+            {"$set": {"rates": rates, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        
+        await log_admin_action(
+            admin["minecraft_username"],
+            "Currency rate updated",
+            f"{data.code}: GRP rate {old_rate} → {data.base_rate_to_grp}"
+        )
+    
+    return {"message": "Currency updated successfully", "code": data.code}
+
+@api_router.put("/admin/exchange-rate/direct")
+async def update_direct_exchange_rate(data: ExchangeRateUpdate, admin: dict = Depends(require_admin)):
+    """Update a specific exchange rate directly (admin only)"""
+    currencies = await get_available_currencies()
+    
+    if data.from_currency not in currencies or data.to_currency not in currencies:
+        raise HTTPException(status_code=400, detail="Invalid currency")
+    
+    if data.rate <= 0:
+        raise HTTPException(status_code=400, detail="Rate must be positive")
+    
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"})
+    rates = rates_doc.get("rates", {}) if rates_doc else dict(DEFAULT_EXCHANGE_MATRIX)
+    
+    rate_key = f"{data.from_currency}_TO_{data.to_currency}"
+    old_rate = rates.get(rate_key, 0)
+    rates[rate_key] = data.rate
+    
+    # Also update inverse rate
+    inverse_key = f"{data.to_currency}_TO_{data.from_currency}"
+    rates[inverse_key] = 1.0 / data.rate
+    
+    await db.exchange_rates.update_one(
+        {"id": "exchange_matrix"},
+        {"$set": {"rates": rates, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Exchange rate updated",
+        f"{rate_key}: {old_rate} → {data.rate}"
+    )
+    
+    return {
+        "message": "Exchange rate updated",
+        "rate_key": rate_key,
+        "old_rate": old_rate,
+        "new_rate": data.rate
+    }
+
+@api_router.delete("/admin/currencies/{currency_code}")
+async def delete_currency(currency_code: str, admin: dict = Depends(require_admin)):
+    """Remove a currency from the system (admin only) - only works for non-base currencies"""
+    base_currencies = ["NIM", "GRP", "VDD", "KKD"]  # These cannot be deleted
+    
+    if currency_code.upper() in base_currencies:
+        raise HTTPException(status_code=400, detail="Cannot delete base currencies")
+    
+    currencies_doc = await db.currencies.find_one({"id": "currency_list"})
+    if not currencies_doc:
+        raise HTTPException(status_code=404, detail="Currency system not initialized")
+    
+    currencies = currencies_doc.get("currencies", [])
+    names = currencies_doc.get("names", {})
+    
+    if currency_code.upper() not in currencies:
+        raise HTTPException(status_code=404, detail="Currency not found")
+    
+    # Remove currency
+    currencies.remove(currency_code.upper())
+    if currency_code.upper() in names:
+        del names[currency_code.upper()]
+    
+    await db.currencies.update_one(
+        {"id": "currency_list"},
+        {"$set": {"currencies": currencies, "names": names, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Remove exchange rates involving this currency
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"})
+    if rates_doc:
+        rates = rates_doc.get("rates", {})
+        keys_to_remove = [k for k in rates.keys() if currency_code.upper() in k]
+        for key in keys_to_remove:
+            del rates[key]
+        
+        await db.exchange_rates.update_one(
+            {"id": "exchange_matrix"},
+            {"$set": {"rates": rates, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Currency deleted",
+        f"Code: {currency_code.upper()}"
+    )
+    
+    return {"message": "Currency deleted successfully", "code": currency_code.upper()}
+
+@api_router.post("/admin/currencies/initialize")
+async def initialize_currency_system(admin: dict = Depends(require_admin)):
+    """Initialize or reset the currency system with defaults (admin only)"""
+    # Initialize currencies
+    await db.currencies.update_one(
+        {"id": "currency_list"},
+        {
+            "$set": {
+                "currencies": ALL_CURRENCIES,
+                "names": CURRENCY_NAMES,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    # Initialize exchange matrix
+    await db.exchange_rates.update_one(
+        {"id": "exchange_matrix"},
+        {
+            "$set": {
+                "rates": DEFAULT_EXCHANGE_MATRIX,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Currency system initialized",
+        f"Currencies: {ALL_CURRENCIES}"
+    )
+    
+    return {
+        "message": "Currency system initialized",
+        "currencies": ALL_CURRENCIES,
+        "rates_count": len(DEFAULT_EXCHANGE_MATRIX)
+    }
+
+# Add new balances (EP, EGD) to existing users
+@api_router.post("/admin/users/migrate-balances")
+async def migrate_user_balances(admin: dict = Depends(require_admin)):
+    """Add new currency balances (EP, EGD) to all existing users"""
+    result = await db.users.update_many(
+        {},
+        {
+            "$set": {
+                "balances.EP": 0,
+                "balances.EGD": 0
+            }
+        }
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "User balances migrated",
+        f"Updated {result.modified_count} users with EP and EGD balances"
+    )
+    
+    return {
+        "message": "User balances migrated successfully",
+        "users_updated": result.modified_count
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -2344,6 +2670,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    await initialize_exchange_matrix()
+    await initialize_currencies()
+    logger.info("Database initialized with currencies and exchange rates")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
