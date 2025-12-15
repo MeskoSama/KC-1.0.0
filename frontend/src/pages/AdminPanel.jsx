@@ -332,6 +332,8 @@ const AdminPanel = ({ user, onLogout }) => {
                       <TableHead>GRP</TableHead>
                       <TableHead>VDD</TableHead>
                       <TableHead>KKD</TableHead>
+                      <TableHead>EP</TableHead>
+                      <TableHead>EGD</TableHead>
                       <TableHead>Admin</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -344,6 +346,8 @@ const AdminPanel = ({ user, onLogout }) => {
                         <TableCell>{user.balances?.GRP?.toFixed(2) || '0.00'}</TableCell>
                         <TableCell>{user.balances?.VDD?.toFixed(2) || '0.00'}</TableCell>
                         <TableCell>{user.balances?.KKD?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell>{user.balances?.EP?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell>{user.balances?.EGD?.toFixed(2) || '0.00'}</TableCell>
                         <TableCell>{user.is_admin ? '✅' : '❌'}</TableCell>
                       </TableRow>
                     ))}
