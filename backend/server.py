@@ -42,7 +42,9 @@ SERVER_CODES = {
     "10194": "NIM",
     "10997": "GRP",
     "20664": "VDD",
-    "90154": "KKD"
+    "90154": "KKD",
+    "10101": "EP",
+    "90234": "EGD"
 }
 
 # All available currencies in the system
