@@ -3298,10 +3298,11 @@ async def initialize_default_countries(admin: dict = Depends(require_admin)):
     await db.countries.delete_many({})
     
     for country_data in DEFAULT_COUNTRIES:
-        country_data["created_at"] = datetime.now(timezone.utc).isoformat()
-        country_data["last_treasury_update"] = datetime.now(timezone.utc).isoformat()
-        country_data["treasury_history"] = []
-        await db.countries.insert_one(country_data.copy())
+        country_copy = country_data.copy()
+        country_copy["created_at"] = datetime.now(timezone.utc).isoformat()
+        country_copy["last_treasury_update"] = datetime.now(timezone.utc).isoformat()
+        country_copy["treasury_history"] = []
+        await db.countries.insert_one(country_copy)
     
     await log_admin_action(
         admin["minecraft_username"],
@@ -3333,6 +3334,156 @@ async def initialize_new_stocks_endpoint(admin: dict = Depends(require_admin)):
     )
     
     return {"message": f"Added {added} new stocks", "total_new": len(NEW_STOCKS)}
+
+
+# ============================================================================
+# GOVERNMENT & LEADERSHIP ENDPOINTS
+# ============================================================================
+
+@api_router.get("/countries/{country_id}/government")
+async def get_country_government(country_id: str):
+    """Get government information for a specific country"""
+    country = await db.countries.find_one({"id": country_id}, {"_id": 0})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    return {
+        "country_id": country_id,
+        "country_name": country.get("name"),
+        "government": country.get("government", {
+            "leader_type": "",
+            "leader_name": "",
+            "government_system": "",
+            "total_seats": 0,
+            "council": [],
+            "ministries": [],
+            "parties": []
+        })
+    }
+
+@api_router.get("/countries/governments/all")
+async def get_all_governments():
+    """Get government information for all countries"""
+    countries = await db.countries.find({}, {"_id": 0}).to_list(100)
+    
+    result = []
+    for country in countries:
+        result.append({
+            "country_id": country.get("id"),
+            "country_name": country.get("name"),
+            "color": country.get("color"),
+            "government": country.get("government", {
+                "leader_type": "",
+                "leader_name": "",
+                "government_system": "",
+                "total_seats": 0,
+                "council": [],
+                "ministries": [],
+                "parties": []
+            })
+        })
+    
+    return {"countries": result}
+
+@api_router.put("/admin/countries/{country_id}/government")
+async def update_country_government(country_id: str, data: GovernmentUpdate, admin: dict = Depends(require_admin)):
+    """Update government basic info (leader, system) for a country (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    government = country.get("government", {})
+    
+    if data.leader_type is not None:
+        government["leader_type"] = data.leader_type
+    if data.leader_name is not None:
+        government["leader_name"] = data.leader_name
+    if data.government_system is not None:
+        government["government_system"] = data.government_system
+    if data.total_seats is not None:
+        government["total_seats"] = data.total_seats
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {"government": government, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Government updated",
+        f"{country_id}: {data.model_dump(exclude_none=True)}"
+    )
+    
+    return {"message": "Government info updated successfully"}
+
+@api_router.put("/admin/countries/{country_id}/council")
+async def update_country_council(country_id: str, data: CouncilUpdate, admin: dict = Depends(require_admin)):
+    """Update council members for a country (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    government = country.get("government", {})
+    government["council"] = [member.model_dump() for member in data.council]
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {"government": government, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Council updated",
+        f"{country_id}: {len(data.council)} members"
+    )
+    
+    return {"message": "Council updated successfully"}
+
+@api_router.put("/admin/countries/{country_id}/ministries")
+async def update_country_ministries(country_id: str, data: MinistriesUpdate, admin: dict = Depends(require_admin)):
+    """Update ministries for a country (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    government = country.get("government", {})
+    government["ministries"] = [minister.model_dump() for minister in data.ministries]
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {"government": government, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Ministries updated",
+        f"{country_id}: {len(data.ministries)} ministries"
+    )
+    
+    return {"message": "Ministries updated successfully"}
+
+@api_router.put("/admin/countries/{country_id}/parties")
+async def update_country_parties(country_id: str, data: PartiesUpdate, admin: dict = Depends(require_admin)):
+    """Update political parties for a country (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    government = country.get("government", {})
+    government["parties"] = [party.model_dump() for party in data.parties]
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {"government": government, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Parties updated",
+        f"{country_id}: {len(data.parties)} parties"
+    )
+    
+    return {"message": "Political parties updated successfully"}
 
 
 # Include the router in the main app
