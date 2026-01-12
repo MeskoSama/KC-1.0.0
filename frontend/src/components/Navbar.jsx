@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, ShoppingCart, Target, Trophy, Building2, LogOut, Shield, ArrowRightLeft, TrendingUp, History, Wallet, LineChart, Landmark, PieChart } from 'lucide-react';
+import { Home, ShoppingCart, Target, Trophy, Building2, LogOut, Shield, ArrowRightLeft, TrendingUp, History, Wallet, LineChart, Landmark, PieChart, Crown } from 'lucide-react';
 
 export const Navbar = ({ user, onLogout }) => {
   const location = useLocation();
@@ -14,6 +14,7 @@ export const Navbar = ({ user, onLogout }) => {
     { path: '/charts', icon: LineChart, label: 'Charts' },
     { path: '/exchange', icon: ArrowRightLeft, label: 'Exchange' },
     { path: '/countries', icon: Landmark, label: 'Countries' },
+    { path: '/countries/leaders', icon: Crown, label: 'Leaders' },
     { path: '/countries/economic-share', icon: PieChart, label: 'Economy' },
     { path: '/houses', icon: Building2, label: 'Houses' },
     { path: '/bounties', icon: Target, label: 'Bounties' },
