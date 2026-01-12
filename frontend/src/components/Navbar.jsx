@@ -56,25 +56,29 @@ export const Navbar = ({ user, onLogout }) => {
               })}
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm text-slate-400">Player</span>
-              <span className="font-bold text-purple-400" data-testid="navbar-username">{user.username}</span>
+          {user && (
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-sm text-slate-400">Player</span>
+                <span className="font-bold text-purple-400" data-testid="navbar-username">{user.minecraft_username || user.username}</span>
+              </div>
+              <div className="currency-badge" data-testid="navbar-balance">
+                <span className="text-purple-400 font-bold">{(user.balances?.[user.currency_type] || 0).toFixed(2)}</span>
+                <span className="text-slate-300">{user.currency_type}</span>
+              </div>
+              {onLogout && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onLogout}
+                  className="border-red-600 text-red-600 hover:bg-red-950"
+                  data-testid="logout-button"
+                >
+                  <LogOut size={18} />
+                </Button>
+              )}
             </div>
-            <div className="currency-badge" data-testid="navbar-balance">
-              <span className="text-purple-400 font-bold">{user.balances[user.currency_type].toFixed(2)}</span>
-              <span className="text-slate-300">{user.currency_type}</span>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onLogout}
-              className="border-red-600 text-red-600 hover:bg-red-950"
-              data-testid="logout-button"
-            >
-              <LogOut size={18} />
-            </Button>
-          </div>
+          )}
         </div>
       </div>
     </nav>
