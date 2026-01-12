@@ -6,7 +6,7 @@ import { Globe, Landmark, TrendingUp, Wallet, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import { API } from '../App';
 
-const CountryEconomicShare = () => {
+const CountryEconomicShare = ({ user, onLogout }) => {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -145,7 +145,7 @@ const CountryEconomicShare = () => {
   if (loading) {
     return (
       <div className="min-h-screen kapitalist-bg">
-        <Navbar />
+        <Navbar user={user} onLogout={onLogout} />
         <div className="container mx-auto px-4 py-8 flex items-center justify-center">
           <RefreshCw className="animate-spin text-purple-400" size={32} />
         </div>
@@ -155,7 +155,7 @@ const CountryEconomicShare = () => {
 
   return (
     <div className="min-h-screen kapitalist-bg">
-      <Navbar />
+      <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
