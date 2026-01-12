@@ -89,6 +89,7 @@ function App() {
           <Route path="/charts" element={user ? <StockCharts user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/countries" element={user ? <CountryInfo user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/countries/economic-share" element={user ? <CountryEconomicShare user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
+          <Route path="/countries/leaders" element={user ? <CountryLeaders user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/admin" element={user && user.is_admin ? <AdminPanel user={user} onLogout={logout} /> : <Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
