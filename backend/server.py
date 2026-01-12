@@ -60,63 +60,251 @@ CURRENCY_NAMES = {
     "EGD": "EGD"  # Egoslavya Dinar
 }
 
-# Currency exchange rates (base: GRP)
+# Currency exchange rates (base: GRP) - UPDATED RATES
 # 1 GRP = X other currency
 DEFAULT_CURRENCY_RATES = {
-    "GRP_TO_NIM": 1.68700,
-    "GRP_TO_VDD": 2.36666,
-    "GRP_TO_KKD": 2.61455,
-    "GRP_TO_EP": 112.43750,
-    "GRP_TO_EGD": 118.05937,
+    "GRP_TO_NIM": 1.6060,
+    "GRP_TO_VDD": 2.3861,
+    "GRP_TO_KKD": 2.2836,
+    "GRP_TO_EP": 112.5055,
+    "GRP_TO_EGD": 118.1307,
     "GRP_TO_USD": 0.000245
 }
 
-# Full exchange rate matrix - all currency pairs
+# Full exchange rate matrix - all currency pairs (UPDATED)
 # These rates are: 1 FROM_CURRENCY = X TO_CURRENCY
 DEFAULT_EXCHANGE_MATRIX = {
     # GRP conversions
     "GRP_TO_GRP": 1.0,
-    "GRP_TO_NIM": 1.68700,
-    "GRP_TO_VDD": 2.36666,
-    "GRP_TO_KKD": 2.61455,
-    "GRP_TO_EP": 112.43750,
-    "GRP_TO_EGD": 118.05937,
+    "GRP_TO_NIM": 1.6060,
+    "GRP_TO_VDD": 2.3861,
+    "GRP_TO_KKD": 2.2836,
+    "GRP_TO_EP": 112.5055,
+    "GRP_TO_EGD": 118.1307,
     # NIM conversions (1 NIM = X)
-    "NIM_TO_GRP": 0.59277,  # 1/1.687
+    "NIM_TO_GRP": 0.62267,  # 1/1.6060
     "NIM_TO_NIM": 1.0,
-    "NIM_TO_VDD": 1.40288,  # 2.36666/1.687
-    "NIM_TO_KKD": 1.54977,  # 2.61455/1.687
-    "NIM_TO_EP": 66.64500,
-    "NIM_TO_EGD": 69.97725,
+    "NIM_TO_VDD": 1.48576,  # 2.3861/1.6060
+    "NIM_TO_KKD": 1.42191,  # 2.2836/1.6060
+    "NIM_TO_EP": 70.0532,   # 112.5055/1.6060
+    "NIM_TO_EGD": 73.5560,  # 118.1307/1.6060
     # VDD conversions (1 VDD = X)
-    "VDD_TO_GRP": 0.42253,  # 1/2.36666
-    "VDD_TO_NIM": 0.71281,  # 1.687/2.36666
+    "VDD_TO_GRP": 0.41909,  # 1/2.3861
+    "VDD_TO_NIM": 0.67306,  # 1.6060/2.3861
     "VDD_TO_VDD": 1.0,
-    "VDD_TO_KKD": 1.10476,  # 2.61455/2.36666
-    "VDD_TO_EP": 47.50900,
-    "VDD_TO_EGD": 49.88445,
+    "VDD_TO_KKD": 0.95704,  # 2.2836/2.3861
+    "VDD_TO_EP": 47.1469,   # 112.5055/2.3861
+    "VDD_TO_EGD": 49.5064,  # 118.1307/2.3861
     # KKD conversions (1 KKD = X)
-    "KKD_TO_GRP": 0.38248,  # 1/2.61455
-    "KKD_TO_NIM": 0.64522,  # 1.687/2.61455
-    "KKD_TO_VDD": 0.90514,  # 2.36666/2.61455
+    "KKD_TO_GRP": 0.43791,  # 1/2.2836
+    "KKD_TO_NIM": 0.70335,  # 1.6060/2.2836
+    "KKD_TO_VDD": 1.04488,  # 2.3861/2.2836
     "KKD_TO_KKD": 1.0,
-    "KKD_TO_EP": 43.01000,
-    "KKD_TO_EGD": 45.16050,
+    "KKD_TO_EP": 49.2658,   # 112.5055/2.2836
+    "KKD_TO_EGD": 51.7295,  # 118.1307/2.2836
     # EP conversions (1 EP = X)
-    "EP_TO_GRP": 0.00889,  # 1/112.4375
-    "EP_TO_NIM": 0.01501,  # 1/66.645
-    "EP_TO_VDD": 0.02105,  # 1/47.509
-    "EP_TO_KKD": 0.02325,  # 1/43.01
+    "EP_TO_GRP": 0.00889,   # 1/112.5055
+    "EP_TO_NIM": 0.01428,   # 1.6060/112.5055
+    "EP_TO_VDD": 0.02121,   # 2.3861/112.5055
+    "EP_TO_KKD": 0.02030,   # 2.2836/112.5055
     "EP_TO_EP": 1.0,
-    "EP_TO_EGD": 1.05000,
+    "EP_TO_EGD": 1.05000,   # 118.1307/112.5055
     # EGD conversions (1 EGD = X)
-    "EGD_TO_GRP": 0.00847,  # 1/118.05937
-    "EGD_TO_NIM": 0.01429,  # 1/69.97725
-    "EGD_TO_VDD": 0.02005,  # 1/49.88445
-    "EGD_TO_KKD": 0.02214,  # 1/45.1605
-    "EGD_TO_EP": 0.95238,
+    "EGD_TO_GRP": 0.00847,  # 1/118.1307
+    "EGD_TO_NIM": 0.01360,  # 1.6060/118.1307
+    "EGD_TO_VDD": 0.02020,  # 2.3861/118.1307
+    "EGD_TO_KKD": 0.01933,  # 2.2836/118.1307
+    "EGD_TO_EP": 0.95238,   # 1/1.05
     "EGD_TO_EGD": 1.0
 }
+
+# Independence status types
+INDEPENDENCE_STATUSES = [
+    "non-independent settlement",
+    "independent settlement",
+    "independent area",
+    "independent region",
+    "independent country"
+]
+
+# Default country data
+DEFAULT_COUNTRIES = [
+    {
+        "id": "germania",
+        "name": "Germania Empire",
+        "currency": "GRP",
+        "independence_status": "independent country",
+        "treasury": 101270250000,
+        "color": "#9333ea",  # Purple
+        "income": [
+            {"name": "Factory Income", "amount": 37550000},
+            {"name": "Industrial Income", "amount": 7500000},
+            {"name": "Tax Income", "amount": 5500000},
+            {"name": "Customs Income", "amount": 1250000},
+            {"name": "Trade Income", "amount": 10750000},
+            {"name": "Business Income", "amount": 2245000},
+            {"name": "Guild Income", "amount": 680000},
+            {"name": "Infrastructure Income", "amount": 6650000}
+        ],
+        "expenses": [
+            {"name": "Consumption Expenses", "amount": 1125000},
+            {"name": "Infrastructure Maintenance", "amount": 3500000},
+            {"name": "Salaries and Energy Expenses", "amount": 2200000},
+            {"name": "Ministries and Council Expenses", "amount": 5000000},
+            {"name": "Government Expenses", "amount": 12000000},
+            {"name": "Artificial Intelligence Usage", "amount": 8000000}
+        ],
+        "economic_share": {
+            "bank_flow": 18.37,
+            "trade": 39.55,
+            "global_reserves": 73.72
+        }
+    },
+    {
+        "id": "holy_empire",
+        "name": "Holy Empire",
+        "currency": "NIM",
+        "independence_status": "independent country",
+        "treasury": 46042452298,
+        "color": "#ef4444",  # Red
+        "income": [
+            {"name": "Factory Income", "amount": 16630000},
+            {"name": "Industrial Income", "amount": 6600000},
+            {"name": "Tax Income", "amount": 6500000},
+            {"name": "Customs Income", "amount": 1350000},
+            {"name": "Trade Income", "amount": 10575000},
+            {"name": "Business Income", "amount": 2950000},
+            {"name": "Guild Income", "amount": 800000},
+            {"name": "Infrastructure Income", "amount": 11000000}
+        ],
+        "expenses": [
+            {"name": "Consumption Expenses", "amount": 1000000},
+            {"name": "Infrastructure Maintenance", "amount": 4000000},
+            {"name": "Salaries and Energy Expenses", "amount": 1850000},
+            {"name": "Ministries and Council Expenses", "amount": 4000000},
+            {"name": "Government Expenses", "amount": 6000000},
+            {"name": "Artificial Intelligence Usage", "amount": 4000000}
+        ],
+        "economic_share": {
+            "bank_flow": 53.03,
+            "trade": 21.95,
+            "global_reserves": 19.86
+        }
+    },
+    {
+        "id": "lost_kingdom",
+        "name": "Lost Kingdom",
+        "currency": "KKD",
+        "independence_status": "independent country",
+        "treasury": 20433225616,
+        "color": "#f59e0b",  # Amber
+        "income": [
+            {"name": "Factory Income", "amount": 25370000},
+            {"name": "Industrial Income", "amount": 0},
+            {"name": "Tax Income", "amount": 3000000},
+            {"name": "Customs Income", "amount": 3150000},
+            {"name": "Trade Income", "amount": 19500000},
+            {"name": "Business Income", "amount": 2500000},
+            {"name": "Guild Income", "amount": 750000},
+            {"name": "Infrastructure Income", "amount": 7000000}
+        ],
+        "expenses": [
+            {"name": "Consumption Expenses", "amount": 4500000},
+            {"name": "Infrastructure Maintenance", "amount": 5500000},
+            {"name": "Salaries and Energy Expenses", "amount": 5000000},
+            {"name": "Ministries and Council Expenses", "amount": 5000000},
+            {"name": "Government Expenses", "amount": 12000000},
+            {"name": "Artificial Intelligence Usage", "amount": 8000000}
+        ],
+        "economic_share": {
+            "bank_flow": 28.60,
+            "trade": 37.60,
+            "global_reserves": 5.69
+        }
+    },
+    {
+        "id": "veltronia",
+        "name": "Veltronia Dominarex",
+        "currency": "VDD",
+        "independence_status": "independent country",
+        "treasury": 2358949410,
+        "color": "#22c55e",  # Green
+        "income": [
+            {"name": "Factory Income", "amount": 0},
+            {"name": "Industrial Income", "amount": 880000},
+            {"name": "Tax Income", "amount": 500000},
+            {"name": "Customs Income", "amount": 150000},
+            {"name": "Trade Income", "amount": 7100000},
+            {"name": "Business Income", "amount": 0},
+            {"name": "Guild Income", "amount": 0},
+            {"name": "Infrastructure Income", "amount": 350000}
+        ],
+        "expenses": [
+            {"name": "Consumption Expenses", "amount": 1000000},
+            {"name": "Infrastructure Maintenance", "amount": 500000},
+            {"name": "Salaries and Energy Expenses", "amount": 1200000},
+            {"name": "Ministries and Council Expenses", "amount": 1000000},
+            {"name": "Government Expenses", "amount": 4000000},
+            {"name": "Artificial Intelligence Usage", "amount": 0}
+        ],
+        "economic_share": {
+            "bank_flow": 0,
+            "trade": 0.90,
+            "global_reserves": 0.73
+        }
+    },
+    {
+        "id": "egoslavia",
+        "name": "Egoslavia",
+        "currency": "EGD",
+        "independence_status": "non-independent settlement",
+        "treasury": 200000000,
+        "color": "#3b82f6",  # Blue
+        "income": [
+            {"name": "Factory Income", "amount": 0},
+            {"name": "Industrial Income", "amount": 0},
+            {"name": "Tax Income", "amount": 0},
+            {"name": "Customs Income", "amount": 0},
+            {"name": "Trade Income", "amount": 0},
+            {"name": "Business Income", "amount": 0},
+            {"name": "Guild Income", "amount": 0},
+            {"name": "Infrastructure Income", "amount": 0}
+        ],
+        "expenses": [
+            {"name": "Consumption Expenses", "amount": 0},
+            {"name": "Infrastructure Maintenance", "amount": 0},
+            {"name": "Salaries and Energy Expenses", "amount": 0},
+            {"name": "Ministries and Council Expenses", "amount": 0},
+            {"name": "Government Expenses", "amount": 0},
+            {"name": "Artificial Intelligence Usage", "amount": 0}
+        ],
+        "economic_share": {
+            "bank_flow": 0,
+            "trade": 0,
+            "global_reserves": 0
+        }
+    }
+]
+
+# New stocks to add
+NEW_STOCKS = [
+    # NIM stocks
+    {"symbol": "NIM-IMPERIAL-IND", "name": "Imperial Industry Office", "currency": "NIM", "current_price": 10.00},
+    {"symbol": "NIM-IMPERIAL-TRADE", "name": "Imperial Trade Office", "currency": "NIM", "current_price": 2.55},
+    # VDD stocks
+    {"symbol": "VDD-JOINT-BANK", "name": "Veltronia Joint Banking", "currency": "VDD", "current_price": 3.33},
+    {"symbol": "VDD-TRADE-OFFICE", "name": "Veltronia Trade Office", "currency": "VDD", "current_price": 1.20},
+    # KKD stocks
+    {"symbol": "KKD-IND-OFFICE", "name": "Lost Kingdom Industry Office", "currency": "KKD", "current_price": 23.50},
+    {"symbol": "KKD-TRADE-OFFICE", "name": "Lost Kingdom Trade Office", "currency": "KKD", "current_price": 4.52},
+    # EGD stocks
+    {"symbol": "EGD-GOV", "name": "Egoslavia Government", "currency": "EGD", "current_price": 100.00},
+    {"symbol": "EGD-MINISTRY", "name": "Egoslavia Ministry Office", "currency": "EGD", "current_price": 3.50},
+    {"symbol": "EGD-SUMERBANK", "name": "SümerBank", "currency": "EGD", "current_price": 5.00},
+    {"symbol": "EGD-MXBUILD", "name": "MX Build", "currency": "EGD", "current_price": 5.00},
+    {"symbol": "EGD-EGBUILD", "name": "EG Build", "currency": "EGD", "current_price": 1.00},
+    {"symbol": "EGD-HAZINE", "name": "Egoslavia Treasury Bond", "currency": "EGD", "current_price": 0.10}
+]
 
 # Rank prices
 RANK_PRICES = {
