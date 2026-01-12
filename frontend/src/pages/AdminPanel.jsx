@@ -183,6 +183,10 @@ const AdminPanel = ({ user, onLogout }) => {
             <AdminInvestments />
           </TabsContent>
 
+          <TabsContent value="countries" className="mt-6">
+            <AdminCountryManagement />
+          </TabsContent>
+
           <TabsContent value="currencies" className="mt-6">
             <AdminCurrencyManagement />
           </TabsContent>
