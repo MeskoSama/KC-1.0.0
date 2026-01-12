@@ -391,6 +391,57 @@ async def initialize_currencies():
             "created_at": datetime.now(timezone.utc).isoformat()
         })
 
+async def initialize_countries():
+    """Initialize countries in database if not exists"""
+    for country_data in DEFAULT_COUNTRIES:
+        existing = await db.countries.find_one({"id": country_data["id"]})
+        if not existing:
+            country_data["created_at"] = datetime.now(timezone.utc).isoformat()
+            country_data["last_treasury_update"] = datetime.now(timezone.utc).isoformat()
+            await db.countries.insert_one(country_data)
+
+async def initialize_new_stocks():
+    """Initialize new stocks in database if not exists"""
+    for stock_data in NEW_STOCKS:
+        existing = await db.investments.find_one({"symbol": stock_data["symbol"]})
+        if not existing:
+            stock_data["id"] = str(uuid.uuid4())
+            stock_data["created_at"] = datetime.now(timezone.utc).isoformat()
+            stock_data["price_history"] = [{"timestamp": datetime.now(timezone.utc).isoformat(), "price": stock_data["current_price"]}]
+            stock_data["disabled"] = False
+            await db.investments.insert_one(stock_data)
+
+async def update_weekly_treasury():
+    """Update all country treasuries based on weekly net income"""
+    countries = await db.countries.find({}).to_list(100)
+    
+    for country in countries:
+        total_income = sum(item.get("amount", 0) for item in country.get("income", []))
+        total_expenses = sum(item.get("amount", 0) for item in country.get("expenses", []))
+        weekly_net = total_income - total_expenses
+        
+        new_treasury = country.get("treasury", 0) + weekly_net
+        
+        await db.countries.update_one(
+            {"id": country["id"]},
+            {
+                "$set": {
+                    "treasury": new_treasury,
+                    "last_treasury_update": datetime.now(timezone.utc).isoformat()
+                },
+                "$push": {
+                    "treasury_history": {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "previous": country.get("treasury", 0),
+                        "change": weekly_net,
+                        "new_balance": new_treasury
+                    }
+                }
+            }
+        )
+    
+    return {"message": f"Updated treasury for {len(countries)} countries"}
+
 
 async def log_admin_action(admin_username: str, action: str, details: str):
     """Log admin actions"""
