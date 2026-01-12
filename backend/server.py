@@ -3230,7 +3230,9 @@ async def startup_event():
     """Initialize database on startup"""
     await initialize_exchange_matrix()
     await initialize_currencies()
-    logger.info("Database initialized with currencies and exchange rates")
+    await initialize_countries()
+    await initialize_new_stocks()
+    logger.info("Database initialized with currencies, exchange rates, countries, and stocks")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
