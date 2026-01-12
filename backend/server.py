@@ -666,6 +666,49 @@ class CountryEconomicShareUpdate(BaseModel):
     trade: Optional[float] = None
     global_reserves: Optional[float] = None
 
+# Government & Leadership models
+class CouncilMember(BaseModel):
+    name: str
+    role: str = ""  # e.g., "player", "MAI", "Merchant", "Monster", etc.
+    age: int = 0
+
+class Minister(BaseModel):
+    name: str
+    position: str  # e.g., "Minister of Economy"
+    age: int = 0
+
+class PoliticalParty(BaseModel):
+    name: str
+    status: str = "Active"  # "Current ruling government", "Active", "Inactive"
+    leader_name: str = ""
+    leader_role: str = ""  # e.g., "Player"
+    leader_age: int = 0
+    seats: int = 0  # Reichstag seats
+
+class GovernmentInfo(BaseModel):
+    leader_type: str = ""  # e.g., "Emperor", "Party Leader and Emperor", "Sacred Leader", "Prime Minister"
+    leader_name: str = ""
+    government_system: str = ""  # e.g., "Consular Monarchy", "National Democratic", "Socialism", etc.
+    total_seats: int = 0  # For parliamentary systems
+    council: List[CouncilMember] = []
+    ministries: List[Minister] = []
+    parties: List[PoliticalParty] = []
+
+class GovernmentUpdate(BaseModel):
+    leader_type: Optional[str] = None
+    leader_name: Optional[str] = None
+    government_system: Optional[str] = None
+    total_seats: Optional[int] = None
+
+class CouncilUpdate(BaseModel):
+    council: List[CouncilMember]
+
+class MinistriesUpdate(BaseModel):
+    ministries: List[Minister]
+
+class PartiesUpdate(BaseModel):
+    parties: List[PoliticalParty]
+
 # Utility Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
