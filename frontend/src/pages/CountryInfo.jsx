@@ -6,7 +6,7 @@ import { Landmark, TrendingUp, TrendingDown, Coins, Building2, Factory, Shopping
 import axios from 'axios';
 import { API } from '../App';
 
-const CountryInfo = () => {
+const CountryInfo = ({ user, onLogout }) => {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -74,7 +74,7 @@ const CountryInfo = () => {
   if (loading) {
     return (
       <div className="min-h-screen kapitalist-bg">
-        <Navbar />
+        <Navbar user={user} onLogout={onLogout} />
         <div className="container mx-auto px-4 py-8 flex items-center justify-center">
           <RefreshCw className="animate-spin text-purple-400" size={32} />
         </div>
@@ -84,7 +84,7 @@ const CountryInfo = () => {
 
   return (
     <div className="min-h-screen kapitalist-bg">
-      <Navbar />
+      <Navbar user={user} onLogout={onLogout} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
