@@ -626,6 +626,45 @@ class ExchangeRateUpdate(BaseModel):
     to_currency: str
     rate: float
 
+# Country management models
+class IncomeExpenseItem(BaseModel):
+    name: str
+    amount: float
+
+class EconomicShare(BaseModel):
+    bank_flow: float = 0
+    trade: float = 0
+    global_reserves: float = 0
+
+class CountryCreate(BaseModel):
+    id: str
+    name: str
+    currency: str
+    independence_status: str = "independent country"
+    treasury: float = 0
+    color: str = "#9333ea"
+    income: List[IncomeExpenseItem] = []
+    expenses: List[IncomeExpenseItem] = []
+    economic_share: EconomicShare = EconomicShare()
+
+class CountryUpdate(BaseModel):
+    name: Optional[str] = None
+    currency: Optional[str] = None
+    independence_status: Optional[str] = None
+    treasury: Optional[float] = None
+    color: Optional[str] = None
+
+class CountryIncomeExpenseUpdate(BaseModel):
+    country_id: str
+    type: str  # "income" or "expenses"
+    items: List[IncomeExpenseItem]
+
+class CountryEconomicShareUpdate(BaseModel):
+    country_id: str
+    bank_flow: Optional[float] = None
+    trade: Optional[float] = None
+    global_reserves: Optional[float] = None
+
 # Utility Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
