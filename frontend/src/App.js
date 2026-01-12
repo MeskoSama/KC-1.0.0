@@ -19,6 +19,7 @@ import Portfolio from "./pages/Portfolio";
 import StockCharts from "./pages/StockCharts";
 import CountryInfo from "./pages/CountryInfo";
 import CountryEconomicShare from "./pages/CountryEconomicShare";
+import CountryLeaders from "./pages/CountryLeaders";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
