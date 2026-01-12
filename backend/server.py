@@ -2936,6 +2936,278 @@ async def migrate_user_balances(admin: dict = Depends(require_admin)):
     }
 
 
+# ============================================================================
+# COUNTRY MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@api_router.get("/countries")
+async def get_all_countries():
+    """Get all countries with their data (public endpoint)"""
+    countries = await db.countries.find({}, {"_id": 0}).to_list(100)
+    
+    # Calculate totals for each country
+    for country in countries:
+        total_income = sum(item.get("amount", 0) for item in country.get("income", []))
+        total_expenses = sum(item.get("amount", 0) for item in country.get("expenses", []))
+        country["total_income"] = total_income
+        country["total_expenses"] = total_expenses
+        country["weekly_net"] = total_income - total_expenses
+    
+    return {"countries": countries}
+
+@api_router.get("/countries/{country_id}")
+async def get_country(country_id: str):
+    """Get a specific country's data"""
+    country = await db.countries.find_one({"id": country_id}, {"_id": 0})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    total_income = sum(item.get("amount", 0) for item in country.get("income", []))
+    total_expenses = sum(item.get("amount", 0) for item in country.get("expenses", []))
+    country["total_income"] = total_income
+    country["total_expenses"] = total_expenses
+    country["weekly_net"] = total_income - total_expenses
+    
+    return country
+
+@api_router.get("/countries/economic-shares/all")
+async def get_all_economic_shares():
+    """Get economic share data for all countries (for pie charts)"""
+    countries = await db.countries.find({}, {"_id": 0, "id": 1, "name": 1, "color": 1, "economic_share": 1}).to_list(100)
+    return {"countries": countries}
+
+@api_router.post("/admin/countries")
+async def create_country(data: CountryCreate, admin: dict = Depends(require_admin)):
+    """Create a new country (admin only)"""
+    existing = await db.countries.find_one({"id": data.id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Country ID already exists")
+    
+    country_data = data.model_dump()
+    country_data["created_at"] = datetime.now(timezone.utc).isoformat()
+    country_data["last_treasury_update"] = datetime.now(timezone.utc).isoformat()
+    country_data["treasury_history"] = []
+    
+    # Convert Pydantic models to dicts
+    country_data["income"] = [item.model_dump() if hasattr(item, 'model_dump') else item for item in country_data.get("income", [])]
+    country_data["expenses"] = [item.model_dump() if hasattr(item, 'model_dump') else item for item in country_data.get("expenses", [])]
+    country_data["economic_share"] = country_data["economic_share"].model_dump() if hasattr(country_data["economic_share"], 'model_dump') else country_data["economic_share"]
+    
+    await db.countries.insert_one(country_data)
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Country created",
+        f"{data.name} ({data.id}) - {data.currency}"
+    )
+    
+    return {"message": "Country created successfully", "country_id": data.id}
+
+@api_router.put("/admin/countries/{country_id}")
+async def update_country(country_id: str, data: CountryUpdate, admin: dict = Depends(require_admin)):
+    """Update country basic info (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": update_data}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Country updated",
+        f"{country_id}: {update_data}"
+    )
+    
+    return {"message": "Country updated successfully"}
+
+@api_router.put("/admin/countries/{country_id}/income-expenses")
+async def update_country_income_expenses(country_id: str, data: CountryIncomeExpenseUpdate, admin: dict = Depends(require_admin)):
+    """Update country income or expenses (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    if data.type not in ["income", "expenses"]:
+        raise HTTPException(status_code=400, detail="Type must be 'income' or 'expenses'")
+    
+    items = [item.model_dump() for item in data.items]
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {data.type: items, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        f"Country {data.type} updated",
+        f"{country_id}: {len(items)} items"
+    )
+    
+    return {"message": f"Country {data.type} updated successfully"}
+
+@api_router.post("/admin/countries/{country_id}/income-expenses/add")
+async def add_income_expense_item(country_id: str, item_type: str, item: IncomeExpenseItem, admin: dict = Depends(require_admin)):
+    """Add a new income or expense item to a country (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    if item_type not in ["income", "expenses"]:
+        raise HTTPException(status_code=400, detail="Type must be 'income' or 'expenses'")
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {
+            "$push": {item_type: item.model_dump()},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        f"Added {item_type} item",
+        f"{country_id}: {item.name} = {item.amount}"
+    )
+    
+    return {"message": f"Added {item.name} to {item_type}"}
+
+@api_router.put("/admin/countries/{country_id}/economic-share")
+async def update_country_economic_share(country_id: str, data: CountryEconomicShareUpdate, admin: dict = Depends(require_admin)):
+    """Update country economic share percentages (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    current_share = country.get("economic_share", {})
+    
+    if data.bank_flow is not None:
+        current_share["bank_flow"] = data.bank_flow
+    if data.trade is not None:
+        current_share["trade"] = data.trade
+    if data.global_reserves is not None:
+        current_share["global_reserves"] = data.global_reserves
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {"economic_share": current_share, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Economic share updated",
+        f"{country_id}: {current_share}"
+    )
+    
+    return {"message": "Economic share updated successfully"}
+
+@api_router.put("/admin/countries/{country_id}/color")
+async def update_country_color(country_id: str, color: str, admin: dict = Depends(require_admin)):
+    """Update country color for pie charts (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    await db.countries.update_one(
+        {"id": country_id},
+        {"$set": {"color": color, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Country color updated",
+        f"{country_id}: {color}"
+    )
+    
+    return {"message": "Color updated successfully"}
+
+@api_router.delete("/admin/countries/{country_id}")
+async def delete_country(country_id: str, admin: dict = Depends(require_admin)):
+    """Delete a country (admin only)"""
+    country = await db.countries.find_one({"id": country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    await db.countries.delete_one({"id": country_id})
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Country deleted",
+        f"{country['name']} ({country_id})"
+    )
+    
+    return {"message": "Country deleted successfully"}
+
+@api_router.post("/admin/countries/treasury-update")
+async def trigger_weekly_treasury_update(admin: dict = Depends(require_admin)):
+    """Manually trigger weekly treasury update (admin only)"""
+    result = await update_weekly_treasury()
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Treasury update triggered",
+        result["message"]
+    )
+    
+    return result
+
+@api_router.get("/admin/countries/independence-statuses")
+async def get_independence_statuses(admin: dict = Depends(require_admin)):
+    """Get list of valid independence statuses"""
+    return {"statuses": INDEPENDENCE_STATUSES}
+
+@api_router.post("/admin/countries/initialize")
+async def initialize_default_countries(admin: dict = Depends(require_admin)):
+    """Initialize or reset countries to defaults (admin only)"""
+    # Delete existing and re-insert
+    await db.countries.delete_many({})
+    
+    for country_data in DEFAULT_COUNTRIES:
+        country_data["created_at"] = datetime.now(timezone.utc).isoformat()
+        country_data["last_treasury_update"] = datetime.now(timezone.utc).isoformat()
+        country_data["treasury_history"] = []
+        await db.countries.insert_one(country_data.copy())
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Countries initialized",
+        f"Created {len(DEFAULT_COUNTRIES)} default countries"
+    )
+    
+    return {"message": f"Initialized {len(DEFAULT_COUNTRIES)} countries"}
+
+@api_router.post("/admin/stocks/initialize-new")
+async def initialize_new_stocks_endpoint(admin: dict = Depends(require_admin)):
+    """Initialize new stocks (NIM, VDD, KKD, EGD) (admin only)"""
+    added = 0
+    for stock_data in NEW_STOCKS:
+        existing = await db.investments.find_one({"symbol": stock_data["symbol"]})
+        if not existing:
+            stock = stock_data.copy()
+            stock["id"] = str(uuid.uuid4())
+            stock["created_at"] = datetime.now(timezone.utc).isoformat()
+            stock["price_history"] = [{"timestamp": datetime.now(timezone.utc).isoformat(), "price": stock["current_price"]}]
+            stock["disabled"] = False
+            await db.investments.insert_one(stock)
+            added += 1
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "New stocks initialized",
+        f"Added {added} new stocks"
+    )
+    
+    return {"message": f"Added {added} new stocks", "total_new": len(NEW_STOCKS)}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
