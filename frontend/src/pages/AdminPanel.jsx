@@ -167,8 +167,9 @@ const AdminPanel = ({ user, onLogout }) => {
         </div>
 
         <Tabs defaultValue="investments" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 bg-slate-900/50">
+          <TabsList className="grid w-full grid-cols-9 bg-slate-900/50">
             <TabsTrigger value="investments" data-testid="admin-tab-investments"><TrendingUp size={18} className="mr-2" />Stocks</TabsTrigger>
+            <TabsTrigger value="countries" data-testid="admin-tab-countries"><Landmark size={18} className="mr-2" />Countries</TabsTrigger>
             <TabsTrigger value="currencies" data-testid="admin-tab-currencies"><Coins size={18} className="mr-2" />Currencies</TabsTrigger>
             <TabsTrigger value="exchange" data-testid="admin-tab-exchange"><ArrowRightLeft size={18} className="mr-2" />Exchange</TabsTrigger>
             <TabsTrigger value="rates" data-testid="admin-tab-rates"><Settings size={18} className="mr-2" />Rates</TabsTrigger>
