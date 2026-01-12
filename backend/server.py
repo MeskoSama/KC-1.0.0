@@ -159,6 +159,42 @@ DEFAULT_COUNTRIES = [
             "bank_flow": 18.37,
             "trade": 39.55,
             "global_reserves": 73.72
+        },
+        "government": {
+            "leader_type": "Emperor",
+            "leader_name": "Aurelius von Eisenhart",
+            "government_system": "Consular Monarchy",
+            "total_seats": 0,
+            "council": [
+                {"name": "Meskop", "role": "player", "age": 20},
+                {"name": "Muzlupankek", "role": "player", "age": 18},
+                {"name": "Aurelius von Eisenhart", "role": "MAI", "age": 102},
+                {"name": "Rheinvald", "role": "Merchant", "age": 28},
+                {"name": "Friedrich Von Kiel", "role": "Merchant", "age": 31},
+                {"name": "Marcellin Kade", "role": "Merchant", "age": 25},
+                {"name": "Umbrax", "role": "Monster", "age": 116},
+                {"name": "Redfang", "role": "Piglin", "age": 420},
+                {"name": "Velgoum Bremen", "role": "Villager", "age": 34},
+                {"name": "Vilgrax Agras", "role": "Villager", "age": 42},
+                {"name": "William Juleus", "role": "Villager", "age": 46},
+                {"name": "Archi Mulam", "role": "Villager", "age": 44},
+                {"name": "Fabr Jun", "role": "Villager", "age": 39},
+                {"name": "Frobila", "role": "Pillager", "age": 30},
+                {"name": "Gabriel", "role": "Pillager", "age": 32}
+            ],
+            "ministries": [
+                {"name": "Alice Von Kiel", "position": "Minister of Economy", "age": 21},
+                {"name": "Erick Frawn", "position": "Minister of Defense", "age": 46},
+                {"name": "Erika Von Brasseum", "position": "Minister of Infrastructure and Design", "age": 37},
+                {"name": "Mobel Grande", "position": "Minister of Health", "age": 52},
+                {"name": "Klaus Tiran", "position": "Minister of Transportation", "age": 32},
+                {"name": "Milim Vibanaus", "position": "Minister of Interior", "age": 60},
+                {"name": "Wallius Faselleit", "position": "Minister of Foreign Affairs", "age": 58},
+                {"name": "Rebellus Halm", "position": "Minister of Production and Revenue", "age": 43},
+                {"name": "Jonathan Jobel", "position": "Minister of Measurement and Calculation", "age": 27},
+                {"name": "Gramm Fajr", "position": "Minister of Guilds", "age": 41}
+            ],
+            "parties": []
         }
     },
     {
@@ -190,6 +226,20 @@ DEFAULT_COUNTRIES = [
             "bank_flow": 53.03,
             "trade": 21.95,
             "global_reserves": 19.86
+        },
+        "government": {
+            "leader_type": "Party Leader and Emperor",
+            "leader_name": "Meskop Von Brassenreich",
+            "government_system": "National Democratic",
+            "total_seats": 102,
+            "council": [],
+            "ministries": [],
+            "parties": [
+                {"name": "NSIP", "status": "Current ruling government", "leader_name": "Meskop Von Brassenreich", "leader_role": "Player", "leader_age": 21, "seats": 58},
+                {"name": "SKNP", "status": "Active", "leader_name": "JewHunter", "leader_role": "Player", "leader_age": 26, "seats": 12},
+                {"name": "TKNP", "status": "Active", "leader_name": "Alahamora", "leader_role": "Player", "leader_age": 22, "seats": 28},
+                {"name": "PMNP", "status": "Active", "leader_name": "Fraudze", "leader_role": "Player", "leader_age": 21, "seats": 4}
+            ]
         }
     },
     {
@@ -221,6 +271,15 @@ DEFAULT_COUNTRIES = [
             "bank_flow": 28.60,
             "trade": 37.60,
             "global_reserves": 5.69
+        },
+        "government": {
+            "leader_type": "Sacred Leader",
+            "leader_name": "wforestw",
+            "government_system": "Socialism",
+            "total_seats": 0,
+            "council": [],
+            "ministries": [],
+            "parties": []
         }
     },
     {
@@ -252,6 +311,15 @@ DEFAULT_COUNTRIES = [
             "bank_flow": 0,
             "trade": 0.90,
             "global_reserves": 0.73
+        },
+        "government": {
+            "leader_type": "Sacred Leader",
+            "leader_name": "Muzlupankek",
+            "government_system": "Populist Dictatorship",
+            "total_seats": 0,
+            "council": [],
+            "ministries": [],
+            "parties": []
         }
     },
     {
@@ -283,6 +351,21 @@ DEFAULT_COUNTRIES = [
             "bank_flow": 0,
             "trade": 0,
             "global_reserves": 0
+        },
+        "government": {
+            "leader_type": "Prime Minister",
+            "leader_name": "Egoslavin",
+            "government_system": "Consular Monarchy",
+            "total_seats": 0,
+            "council": [
+                {"name": "Meskop", "role": "player", "age": 20},
+                {"name": "Egoslavin", "role": "player", "age": 18},
+                {"name": "MiracLight20_09", "role": "player", "age": 18}
+            ],
+            "ministries": [
+                {"name": "MiracLight20_09", "position": "Minister of Finance and Infrastructure", "age": 18}
+            ],
+            "parties": []
         }
     }
 ]
