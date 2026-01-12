@@ -3226,6 +3226,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def weekly_treasury_scheduler():
+    """Background task to update treasury weekly"""
+    while True:
+        # Wait for 1 week (604800 seconds)
+        await asyncio.sleep(604800)
+        try:
+            result = await update_weekly_treasury()
+            logger.info(f"Weekly treasury update: {result['message']}")
+        except Exception as e:
+            logger.error(f"Weekly treasury update failed: {e}")
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
@@ -3233,7 +3244,12 @@ async def startup_event():
     await initialize_currencies()
     await initialize_countries()
     await initialize_new_stocks()
+    
+    # Start weekly treasury scheduler in background
+    asyncio.create_task(weekly_treasury_scheduler())
+    
     logger.info("Database initialized with currencies, exchange rates, countries, and stocks")
+    logger.info("Weekly treasury scheduler started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
