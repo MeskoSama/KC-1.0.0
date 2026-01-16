@@ -4106,6 +4106,326 @@ async def search_map(query: str = "", x: Optional[int] = None, z: Optional[int] 
     return {"results": results}
 
 
+# ============================================================================
+# MICRO-REGIONS AND MINERALS ENDPOINTS
+# ============================================================================
+
+@api_router.get("/map/micro-regions")
+async def get_all_micro_regions():
+    """Get all micro-regions with their mineral data"""
+    regions = await db.micro_regions.find({}, {"_id": 0}).to_list(1000)
+    
+    # Calculate values with economic multipliers
+    for region in regions:
+        state = region.get("state")
+        state_info = MAP_STATES.get(state, {"economic_multiplier": 1.0})
+        multiplier = state_info.get("economic_multiplier", 1.0)
+        
+        total_value = 0
+        available_value = 0
+        
+        for ore_type, mineral in region.get("minerals", {}).items():
+            ore_info = ORE_PRICES.get(ore_type, {})
+            base_price = mineral.get("base_price", ore_info.get("price", 0))
+            adjusted_price = base_price * multiplier
+            
+            mineral["adjusted_price"] = adjusted_price
+            mineral["total_value"] = (mineral.get("total", 0) / 100) * adjusted_price
+            mineral["available_value"] = (mineral.get("available", 0) / 100) * adjusted_price
+            mineral["availability_ratio"] = mineral.get("available", 0) / max(mineral.get("total", 1), 1)
+            
+            total_value += mineral["total_value"]
+            available_value += mineral["available_value"]
+        
+        region["total_value_grp"] = total_value
+        region["available_value_grp"] = available_value
+        region["economic_multiplier"] = multiplier
+        region["state_info"] = state_info
+    
+    return {"micro_regions": regions}
+
+@api_router.get("/map/micro-regions/{region_id}")
+async def get_micro_region(region_id: str):
+    """Get a specific micro-region with detailed mineral data"""
+    region = await db.micro_regions.find_one({"region_id": region_id}, {"_id": 0})
+    if not region:
+        raise HTTPException(status_code=404, detail="Micro-region not found")
+    
+    state = region.get("state")
+    state_info = MAP_STATES.get(state, {"economic_multiplier": 1.0})
+    multiplier = state_info.get("economic_multiplier", 1.0)
+    
+    mineral_details = []
+    total_value = 0
+    available_value = 0
+    
+    for ore_type, mineral in region.get("minerals", {}).items():
+        ore_info = ORE_PRICES.get(ore_type, {})
+        base_price = mineral.get("base_price", ore_info.get("price", 0))
+        adjusted_price = base_price * multiplier
+        
+        detail = {
+            "ore_type": ore_type,
+            "name": ore_info.get("name", ore_type),
+            "icon": ore_info.get("icon", "⛏️"),
+            "color": ore_info.get("color", "#888"),
+            "total": mineral.get("total", 0),
+            "available": mineral.get("available", 0),
+            "base_price": base_price,
+            "adjusted_price": adjusted_price,
+            "total_value_grp": (mineral.get("total", 0) / 100) * adjusted_price,
+            "available_value_grp": (mineral.get("available", 0) / 100) * adjusted_price,
+            "availability_ratio": mineral.get("available", 0) / max(mineral.get("total", 1), 1)
+        }
+        mineral_details.append(detail)
+        total_value += detail["total_value_grp"]
+        available_value += detail["available_value_grp"]
+    
+    # Sort by value
+    mineral_details.sort(key=lambda x: x["available_value_grp"], reverse=True)
+    
+    return {
+        **region,
+        "mineral_details": mineral_details,
+        "total_value_grp": total_value,
+        "available_value_grp": available_value,
+        "economic_multiplier": multiplier,
+        "state_info": state_info
+    }
+
+@api_router.get("/map/distance")
+async def calculate_distance(x1: int, z1: int, x2: int, z2: int):
+    """Calculate distance between two points in blocks"""
+    import math
+    distance_blocks = math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2)
+    distance_km = distance_blocks / 1000  # 1000 blocks = 1 km in Minecraft RP
+    
+    return {
+        "point1": {"x": x1, "z": z1},
+        "point2": {"x": x2, "z": z2},
+        "distance_blocks": round(distance_blocks, 2),
+        "distance_km": round(distance_km, 3)
+    }
+
+@api_router.get("/map/states")
+async def get_map_states():
+    """Get all map states with their configurations"""
+    return {"states": MAP_STATES}
+
+@api_router.post("/admin/map/micro-regions")
+async def create_micro_region(data: MicroRegionCreate, admin: dict = Depends(require_admin)):
+    """Create a new micro-region (admin only)"""
+    # Check if region_id already exists
+    existing = await db.micro_regions.find_one({"region_id": data.region_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Region ID already exists")
+    
+    # Verify state exists
+    if data.state not in MAP_STATES:
+        raise HTTPException(status_code=400, detail=f"Invalid state. Valid states: {list(MAP_STATES.keys())}")
+    
+    region_data = data.model_dump()
+    region_data["id"] = str(uuid.uuid4())
+    region_data["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Convert minerals to proper format
+    minerals_dict = {}
+    for ore_type, mineral in region_data.get("minerals", {}).items():
+        if hasattr(mineral, 'model_dump'):
+            minerals_dict[ore_type] = mineral.model_dump()
+        else:
+            minerals_dict[ore_type] = mineral
+    region_data["minerals"] = minerals_dict
+    
+    await db.micro_regions.insert_one(region_data)
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Micro-region created",
+        f"{data.region_id} in {data.state}"
+    )
+    
+    return {"message": "Micro-region created", "id": region_data["id"]}
+
+@api_router.put("/admin/map/micro-regions/{region_id}")
+async def update_micro_region(region_id: str, data: MicroRegionUpdate, admin: dict = Depends(require_admin)):
+    """Update a micro-region (admin only)"""
+    region = await db.micro_regions.find_one({"region_id": region_id})
+    if not region:
+        raise HTTPException(status_code=404, detail="Micro-region not found")
+    
+    update_data = {}
+    if data.name is not None:
+        update_data["name"] = data.name
+    if data.infrastructure_density is not None:
+        update_data["infrastructure_density"] = data.infrastructure_density
+    if data.risk_factor is not None:
+        update_data["risk_factor"] = data.risk_factor
+    if data.minerals is not None:
+        update_data["minerals"] = data.minerals
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.micro_regions.update_one(
+        {"region_id": region_id},
+        {"$set": update_data}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Micro-region updated",
+        region_id
+    )
+    
+    return {"message": "Micro-region updated"}
+
+@api_router.put("/admin/map/micro-regions/{region_id}/ore")
+async def update_micro_region_ore(region_id: str, data: OreUpdateRequest, admin: dict = Depends(require_admin)):
+    """Update a specific ore in a micro-region (admin only)"""
+    region = await db.micro_regions.find_one({"region_id": region_id})
+    if not region:
+        raise HTTPException(status_code=404, detail="Micro-region not found")
+    
+    minerals = region.get("minerals", {})
+    ore = minerals.get(data.ore_type, {"total": 0, "available": 0, "base_price": 0})
+    
+    if data.total is not None:
+        ore["total"] = data.total
+    if data.available is not None:
+        ore["available"] = data.available
+    if data.base_price is not None:
+        ore["base_price"] = data.base_price
+    
+    minerals[data.ore_type] = ore
+    
+    await db.micro_regions.update_one(
+        {"region_id": region_id},
+        {"$set": {"minerals": minerals, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Ore updated",
+        f"{data.ore_type} in {region_id}"
+    )
+    
+    return {"message": f"Ore {data.ore_type} updated in {region_id}"}
+
+@api_router.delete("/admin/map/micro-regions/{region_id}")
+async def delete_micro_region(region_id: str, admin: dict = Depends(require_admin)):
+    """Delete a micro-region (admin only)"""
+    result = await db.micro_regions.delete_one({"region_id": region_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Micro-region not found")
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Micro-region deleted",
+        region_id
+    )
+    
+    return {"message": "Micro-region deleted"}
+
+@api_router.post("/admin/map/initialize-world-data")
+async def initialize_world_data(admin: dict = Depends(require_admin)):
+    """Initialize all world map data with default territories, markers, and micro-regions (admin only)"""
+    initialized = {"territories": 0, "markers": 0, "micro_regions": 0}
+    
+    # Initialize territories
+    for territory_data in DEFAULT_TERRITORIES:
+        state = territory_data["state"]
+        state_info = MAP_STATES.get(state, {})
+        
+        existing = await db.territories.find_one({"name": territory_data["name"]})
+        if not existing:
+            coords = territory_data["coordinates"]
+            territory = {
+                "id": str(uuid.uuid4()),
+                "name": territory_data["name"],
+                "country_id": state_info.get("country_id", state),
+                "state": state,
+                "color": state_info.get("color", "#888888"),
+                "polygon": {
+                    "points": [{"x": c[0], "z": c[1]} for c in coords]
+                },
+                "markers": [],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.territories.insert_one(territory)
+            initialized["territories"] += 1
+    
+    # Initialize markers
+    for marker_data in DEFAULT_MARKERS:
+        existing = await db.map_markers.find_one({"name": marker_data["name"]})
+        if not existing:
+            marker = {
+                "id": str(uuid.uuid4()),
+                "name": marker_data["name"],
+                "marker_type": marker_data["type"],
+                "state": marker_data["state"],
+                "x": marker_data["coordinates"][0],
+                "z": marker_data["coordinates"][1],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.map_markers.insert_one(marker)
+            initialized["markers"] += 1
+    
+    # Initialize micro-regions
+    for region_data in DEFAULT_MICRO_REGIONS:
+        existing = await db.micro_regions.find_one({"region_id": region_data["region_id"]})
+        if not existing:
+            region = {
+                **region_data,
+                "id": str(uuid.uuid4()),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.micro_regions.insert_one(region)
+            initialized["micro_regions"] += 1
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "World data initialized",
+        f"Territories: {initialized['territories']}, Markers: {initialized['markers']}, Micro-regions: {initialized['micro_regions']}"
+    )
+    
+    return {
+        "message": "World data initialized",
+        "initialized": initialized
+    }
+
+@api_router.put("/admin/map/ore-prices/{ore_type}")
+async def update_ore_price(ore_type: str, price: float, admin: dict = Depends(require_admin)):
+    """Update base price for an ore type (admin only) - affects all regions"""
+    if ore_type not in ORE_PRICES:
+        raise HTTPException(status_code=404, detail="Ore type not found")
+    
+    # Update in memory (temporary for this session)
+    ORE_PRICES[ore_type]["price"] = price
+    
+    # Update in all micro-regions
+    regions = await db.micro_regions.find({}).to_list(1000)
+    updated_count = 0
+    
+    for region in regions:
+        minerals = region.get("minerals", {})
+        if ore_type in minerals:
+            minerals[ore_type]["base_price"] = price
+            await db.micro_regions.update_one(
+                {"_id": region["_id"]},
+                {"$set": {"minerals": minerals}}
+            )
+            updated_count += 1
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Ore price updated",
+        f"{ore_type}: {price} GRP (updated in {updated_count} regions)"
+    )
+    
+    return {"message": f"Ore price updated for {ore_type}", "new_price": price, "regions_updated": updated_count}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
