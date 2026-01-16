@@ -165,16 +165,19 @@ class WorldMapTester:
         success = status == 200
         
         if success:
-            distance = response.get("distance")
-            if distance is not None:
+            distance_blocks = response.get("distance_blocks")
+            distance_km = response.get("distance_km")
+            
+            if distance_blocks is not None and distance_km is not None:
                 # Calculate expected distance: sqrt((5000-1000)^2 + (5000-1000)^2)
                 expected_distance = math.sqrt((5000-1000)**2 + (5000-1000)**2)
-                distance_correct = abs(distance - expected_distance) < 1.0  # Allow small floating point differences
+                distance_correct = abs(distance_blocks - expected_distance) < 1.0  # Allow small floating point differences
                 
                 self.log_test("Map Distance - Calculation", distance_correct,
-                             f"Expected: {expected_distance:.2f}, Got: {distance}")
+                             f"Expected: {expected_distance:.2f}, Got: {distance_blocks} blocks, {distance_km} km")
             else:
-                self.log_test("Map Distance - Response Structure", False, "No distance field in response")
+                self.log_test("Map Distance - Response Structure", False, 
+                             f"Missing distance fields. Response: {response}")
         else:
             self.log_test("Map Distance - Basic", False, f"Status: {status}, Response: {response}")
             
