@@ -3787,11 +3787,14 @@ async def update_country_parties(country_id: str, data: PartiesUpdate, admin: di
 
 @api_router.get("/map/config")
 async def get_map_config():
-    """Get map configuration including seed, ore prices, and marker types"""
+    """Get map configuration including seed, ore prices, marker types, and states"""
     return {
         "world_seed": WORLD_SEED,
         "ore_prices": ORE_PRICES,
-        "marker_types": MARKER_TYPES
+        "marker_types": MARKER_TYPES,
+        "states": MAP_STATES,
+        "unit": "100_block3",
+        "currency": "GRP"
     }
 
 @api_router.get("/map/territories")
