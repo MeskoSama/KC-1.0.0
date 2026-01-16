@@ -1059,6 +1059,34 @@ class MarkerCreate(BaseModel):
     ore_type: Optional[str] = None
     ore_quantity: Optional[float] = None
 
+# Micro-region models
+class MineralData(BaseModel):
+    total: float
+    available: float
+    base_price: float
+
+class MicroRegionCreate(BaseModel):
+    region_id: str
+    state: str
+    name: str
+    center: List[int]  # [x, z]
+    area_km2: float = 1
+    minerals: Dict[str, MineralData] = {}
+    infrastructure_density: float = 0.5
+    risk_factor: float = 1.0
+
+class MicroRegionUpdate(BaseModel):
+    name: Optional[str] = None
+    minerals: Optional[Dict[str, Dict[str, float]]] = None
+    infrastructure_density: Optional[float] = None
+    risk_factor: Optional[float] = None
+
+class OreUpdateRequest(BaseModel):
+    ore_type: str
+    total: Optional[float] = None
+    available: Optional[float] = None
+    base_price: Optional[float] = None
+
 # Utility Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
