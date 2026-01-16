@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 import uuid
 
 # Configuration
-BASE_URL = "https://code-fixer-104.preview.emergentagent.com/api"
+BASE_URL = "https://world-map-helper.preview.emergentagent.com/api"
 TEST_USER_DATA = {
     "minecraft_username": "TestMiner2024",
     "password": "SecurePassword123!",

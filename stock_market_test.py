@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import uuid
 
 # Configuration
-BASE_URL = "https://code-fixer-104.preview.emergentagent.com/api"
+BASE_URL = "https://world-map-helper.preview.emergentagent.com/api"
 
 class StockMarketTester:
     def __init__(self):
