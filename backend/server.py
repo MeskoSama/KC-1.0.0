@@ -799,6 +799,15 @@ class PartiesUpdate(BaseModel):
 # World seed for Minecraft 1.21.1
 WORLD_SEED = "8168667297865091855"
 
+# State configurations with economic multipliers
+MAP_STATES = {
+    "germania": {"name": "Germania", "color": "#3A6EA5", "economic_multiplier": 1.0, "country_id": "germania"},
+    "nazi_empire": {"name": "Nazi Empire", "color": "#8B0000", "economic_multiplier": 1.439, "country_id": "holy_empire"},
+    "veltronia": {"name": "Veltronia Dominarex", "color": "#5A3D9A", "economic_multiplier": 2.386, "country_id": "veltronia"},
+    "lost_kingdom": {"name": "Lost Kingdom", "color": "#C2A14D", "economic_multiplier": 2.269, "country_id": "lost_kingdom"},
+    "egoslavia": {"name": "Egoslavia", "color": "#888888", "economic_multiplier": 1.2, "country_id": "egoslavia"}
+}
+
 # Ore prices per 100 block³
 ORE_PRICES = {
     "lithium": {"name": "Lithium", "price": 506.5, "color": "#e879f9", "icon": "💎"},
@@ -832,8 +841,176 @@ MARKER_TYPES = {
     "outpost": {"name": "Pillager Outpost", "icon": "🗼"},
     "spawn": {"name": "World Spawn", "icon": "🌟"},
     "ore_deposit": {"name": "Ore Deposit", "icon": "⛏️"},
+    "mine": {"name": "Mine", "icon": "⛏️"},
+    "historical": {"name": "Historical Building", "icon": "🏛️"},
     "custom": {"name": "Custom", "icon": "📍"}
 }
+
+# Default territory data
+DEFAULT_TERRITORIES = [
+    {"state": "germania", "name": "Germania Mainland", "coordinates": [[1000, 1000], [5000, 1000], [5000, 5000], [1000, 5000]]},
+    {"state": "nazi_empire", "name": "Nazi Empire Territory", "coordinates": [[5200, 1000], [9000, 1000], [9000, 5000], [5200, 5000]]},
+    {"state": "veltronia", "name": "Veltronia Dominarex", "coordinates": [[1000, 5200], [5000, 5200], [5000, 9000], [1000, 9000]]},
+    {"state": "lost_kingdom", "name": "Lost Kingdom Lands", "coordinates": [[5200, 5200], [9000, 5200], [9000, 9000], [5200, 9000]]},
+    {"state": "egoslavia", "name": "Egoslavia Region", "coordinates": [[9500, 1000], [12000, 1000], [12000, 9000], [9500, 9000]]}
+]
+
+# Default markers
+DEFAULT_MARKERS = [
+    {"type": "capital", "name": "Germania Capital", "state": "germania", "coordinates": [3000, 3000]},
+    {"type": "historical", "name": "Old Fortress", "state": "lost_kingdom", "coordinates": [6000, 6000]},
+    {"type": "capital", "name": "Nazi Empire HQ", "state": "nazi_empire", "coordinates": [6000, 3000]},
+    {"type": "capital", "name": "Veltronia Capital", "state": "veltronia", "coordinates": [3000, 6000]},
+    {"type": "capital", "name": "Egoslavia Capital", "state": "egoslavia", "coordinates": [10000, 5000]}
+]
+
+# Default micro-regions with mineral data
+DEFAULT_MICRO_REGIONS = [
+    {
+        "region_id": "GER-001",
+        "state": "germania",
+        "name": "Germania Central",
+        "center": [2000, 2000],
+        "area_km2": 1,
+        "minerals": {
+            "lithium": {"total": 100000, "available": 12000, "base_price": 506.5},
+            "iron": {"total": 2000000, "available": 200000, "base_price": 10},
+            "copper": {"total": 1200000, "available": 120000, "base_price": 8},
+            "wood": {"total": 1600000, "available": 160000, "base_price": 0.1},
+            "stone": {"total": 8020000, "available": 802000, "base_price": 0.2},
+            "marble": {"total": 6700000, "available": 670000, "base_price": 0.4},
+            "building_stone": {"total": 11000000, "available": 1100000, "base_price": 0.4},
+            "coal": {"total": 15000000, "available": 1500000, "base_price": 0.6},
+            "gold": {"total": 180000, "available": 18000, "base_price": 75},
+            "diamond": {"total": 60000, "available": 6000, "base_price": 115},
+            "uranium": {"total": 1800000, "available": 180000, "base_price": 17500},
+            "plutonium": {"total": 70000, "available": 7000, "base_price": 95000},
+            "oil": {"total": 1500000, "available": 150000, "base_price": 50}
+        },
+        "infrastructure_density": 0.7,
+        "risk_factor": 1.05
+    },
+    {
+        "region_id": "GER-002",
+        "state": "germania",
+        "name": "Germania East",
+        "center": [4000, 3000],
+        "area_km2": 1,
+        "minerals": {
+            "lithium": {"total": 90000, "available": 11000, "base_price": 506.5},
+            "iron": {"total": 1800000, "available": 180000, "base_price": 10},
+            "copper": {"total": 1100000, "available": 110000, "base_price": 8},
+            "wood": {"total": 1500000, "available": 150000, "base_price": 0.1},
+            "stone": {"total": 7500000, "available": 750000, "base_price": 0.2},
+            "marble": {"total": 6000000, "available": 600000, "base_price": 0.4},
+            "building_stone": {"total": 10000000, "available": 1000000, "base_price": 0.4},
+            "coal": {"total": 14000000, "available": 1400000, "base_price": 0.6},
+            "gold": {"total": 170000, "available": 17000, "base_price": 75},
+            "diamond": {"total": 50000, "available": 5000, "base_price": 115},
+            "uranium": {"total": 1700000, "available": 170000, "base_price": 17500},
+            "plutonium": {"total": 60000, "available": 6000, "base_price": 95000},
+            "oil": {"total": 1400000, "available": 140000, "base_price": 50}
+        },
+        "infrastructure_density": 0.65,
+        "risk_factor": 1.05
+    },
+    {
+        "region_id": "NAZ-001",
+        "state": "nazi_empire",
+        "name": "Nazi Empire Core",
+        "center": [7000, 3000],
+        "area_km2": 1,
+        "minerals": {
+            "lithium": {"total": 10000, "available": 1000, "base_price": 506.5},
+            "iron": {"total": 1580000, "available": 158000, "base_price": 10},
+            "copper": {"total": 2050000, "available": 205000, "base_price": 8},
+            "wood": {"total": 7220000, "available": 722000, "base_price": 0.1},
+            "stone": {"total": 2800000, "available": 280000, "base_price": 0.2},
+            "marble": {"total": 700000, "available": 70000, "base_price": 0.4},
+            "building_stone": {"total": 700000, "available": 70000, "base_price": 0.4},
+            "coal": {"total": 9000000, "available": 900000, "base_price": 0.6},
+            "gold": {"total": 130000, "available": 13000, "base_price": 75},
+            "diamond": {"total": 37000, "available": 3700, "base_price": 115},
+            "uranium": {"total": 10000000, "available": 1000000, "base_price": 17500},
+            "plutonium": {"total": 9750, "available": 975, "base_price": 95000},
+            "oil": {"total": 7900000, "available": 790000, "base_price": 50}
+        },
+        "infrastructure_density": 0.75,
+        "risk_factor": 1.1
+    },
+    {
+        "region_id": "VEL-001",
+        "state": "veltronia",
+        "name": "Veltronia Central",
+        "center": [3000, 7000],
+        "area_km2": 1,
+        "minerals": {
+            "lithium": {"total": 7500, "available": 750, "base_price": 506.5},
+            "iron": {"total": 1966000, "available": 196600, "base_price": 10},
+            "copper": {"total": 1705000, "available": 170500, "base_price": 8},
+            "wood": {"total": 26000000, "available": 2600000, "base_price": 0.1},
+            "stone": {"total": 22000000, "available": 2200000, "base_price": 0.2},
+            "marble": {"total": 3200000, "available": 320000, "base_price": 0.4},
+            "building_stone": {"total": 6240000, "available": 624000, "base_price": 0.4},
+            "coal": {"total": 17000000, "available": 1700000, "base_price": 0.6},
+            "gold": {"total": 111000, "available": 11100, "base_price": 75},
+            "diamond": {"total": 21000, "available": 2100, "base_price": 115},
+            "uranium": {"total": 190000, "available": 19000, "base_price": 17500},
+            "plutonium": {"total": 9675, "available": 967, "base_price": 95000},
+            "oil": {"total": 3790000, "available": 379000, "base_price": 50}
+        },
+        "infrastructure_density": 0.6,
+        "risk_factor": 1.15
+    },
+    {
+        "region_id": "LK-001",
+        "state": "lost_kingdom",
+        "name": "Lost Kingdom Heartland",
+        "center": [7000, 7000],
+        "area_km2": 1,
+        "minerals": {
+            "lithium": {"total": 4800, "available": 480, "base_price": 506.5},
+            "iron": {"total": 800000, "available": 80000, "base_price": 10},
+            "copper": {"total": 1270000, "available": 127000, "base_price": 8},
+            "wood": {"total": 6000000, "available": 600000, "base_price": 0.1},
+            "stone": {"total": 72000000, "available": 7200000, "base_price": 0.2},
+            "marble": {"total": 98000000, "available": 9800000, "base_price": 0.4},
+            "building_stone": {"total": 68000000, "available": 6800000, "base_price": 0.4},
+            "coal": {"total": 58200000, "available": 5820000, "base_price": 0.6},
+            "gold": {"total": 980000, "available": 98000, "base_price": 75},
+            "diamond": {"total": 190000, "available": 19000, "base_price": 115},
+            "uranium": {"total": 7530, "available": 753, "base_price": 17500},
+            "plutonium": {"total": 3100, "available": 310, "base_price": 95000},
+            "oil": {"total": 990000, "available": 99000, "base_price": 50}
+        },
+        "infrastructure_density": 0.55,
+        "risk_factor": 1.2
+    },
+    {
+        "region_id": "EGO-001",
+        "state": "egoslavia",
+        "name": "Egoslavia Main",
+        "center": [10500, 5000],
+        "area_km2": 1,
+        "minerals": {
+            "lithium": {"total": 50000, "available": 5000, "base_price": 506.5},
+            "iron": {"total": 1000000, "available": 100000, "base_price": 10},
+            "copper": {"total": 800000, "available": 80000, "base_price": 8},
+            "wood": {"total": 2000000, "available": 200000, "base_price": 0.1},
+            "stone": {"total": 5000000, "available": 500000, "base_price": 0.2},
+            "marble": {"total": 3000000, "available": 300000, "base_price": 0.4},
+            "building_stone": {"total": 4000000, "available": 400000, "base_price": 0.4},
+            "coal": {"total": 8000000, "available": 800000, "base_price": 0.6},
+            "gold": {"total": 100000, "available": 10000, "base_price": 75},
+            "diamond": {"total": 30000, "available": 3000, "base_price": 115},
+            "uranium": {"total": 500000, "available": 50000, "base_price": 17500},
+            "plutonium": {"total": 20000, "available": 2000, "base_price": 95000},
+            "oil": {"total": 1000000, "available": 100000, "base_price": 50}
+        },
+        "infrastructure_density": 0.5,
+        "risk_factor": 1.1
+    }
+]
 
 # Pydantic models for map
 class MapCoordinate(BaseModel):
