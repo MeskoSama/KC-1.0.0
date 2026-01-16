@@ -792,6 +792,96 @@ class MinistriesUpdate(BaseModel):
 class PartiesUpdate(BaseModel):
     parties: List[PoliticalParty]
 
+# ============================================================================
+# WORLD MAP MODELS
+# ============================================================================
+
+# World seed for Minecraft 1.21.1
+WORLD_SEED = "8168667297865091855"
+
+# Ore prices per 100 block³
+ORE_PRICES = {
+    "lithium": {"name": "Lithium", "price": 506.5, "color": "#e879f9", "icon": "💎"},
+    "iron": {"name": "Iron", "price": 10.0, "color": "#d4d4d4", "icon": "🔩"},
+    "copper": {"name": "Copper", "price": 8.0, "color": "#f97316", "icon": "🟠"},
+    "wood": {"name": "Wood (Odun)", "price": 0.1, "color": "#854d0e", "icon": "🪵"},
+    "stone": {"name": "Stone", "price": 0.2, "color": "#71717a", "icon": "🪨"},
+    "marble": {"name": "Marble", "price": 0.4, "color": "#f5f5f5", "icon": "⬜"},
+    "building_stone": {"name": "Building Stones", "price": 0.4, "color": "#a1a1aa", "icon": "🧱"},
+    "coal": {"name": "Coal", "price": 0.6, "color": "#27272a", "icon": "⚫"},
+    "gold": {"name": "Gold", "price": 75.0, "color": "#fbbf24", "icon": "🥇"},
+    "diamond": {"name": "Diamond", "price": 115.0, "color": "#22d3ee", "icon": "💠"},
+    "uranium": {"name": "Uranium", "price": 17500.0, "color": "#22c55e", "icon": "☢️"},
+    "plutonium": {"name": "Plutonium", "price": 95000.0, "color": "#a855f7", "icon": "⚛️"},
+    "oil": {"name": "Oil", "price": 50.0, "color": "#18181b", "icon": "🛢️"}
+}
+
+# Marker types with emojis
+MARKER_TYPES = {
+    "city": {"name": "City", "icon": "🏠"},
+    "capital": {"name": "Capital City", "icon": "⭐"},
+    "army_camp": {"name": "Army Camp", "icon": "🛡️"},
+    "port": {"name": "Port", "icon": "🚢"},
+    "airport": {"name": "Airport", "icon": "✈️"},
+    "battle": {"name": "War/Battle Area", "icon": "⚔️"},
+    "village": {"name": "Village", "icon": "🏘️"},
+    "temple": {"name": "Temple", "icon": "🏛️"},
+    "stronghold": {"name": "Stronghold", "icon": "🏰"},
+    "monument": {"name": "Ocean Monument", "icon": "🗿"},
+    "mansion": {"name": "Woodland Mansion", "icon": "🏚️"},
+    "outpost": {"name": "Pillager Outpost", "icon": "🗼"},
+    "spawn": {"name": "World Spawn", "icon": "🌟"},
+    "ore_deposit": {"name": "Ore Deposit", "icon": "⛏️"},
+    "custom": {"name": "Custom", "icon": "📍"}
+}
+
+# Pydantic models for map
+class MapCoordinate(BaseModel):
+    x: int
+    z: int
+
+class TerritoryPolygon(BaseModel):
+    points: List[MapCoordinate]  # List of x,z coordinates forming the polygon
+
+class MapMarker(BaseModel):
+    id: str = ""
+    name: str
+    marker_type: str  # Key from MARKER_TYPES
+    x: int
+    z: int
+    description: Optional[str] = ""
+    ore_type: Optional[str] = None  # For ore deposits
+    ore_quantity: Optional[float] = None  # Blocks³ quantity
+
+class Territory(BaseModel):
+    id: str = ""
+    name: str
+    country_id: str  # Links to country
+    color: str  # Hex color
+    polygon: TerritoryPolygon
+    markers: List[MapMarker] = []
+
+class TerritoryCreate(BaseModel):
+    name: str
+    country_id: str
+    color: str
+    polygon: TerritoryPolygon
+
+class TerritoryUpdate(BaseModel):
+    name: Optional[str] = None
+    country_id: Optional[str] = None
+    color: Optional[str] = None
+    polygon: Optional[TerritoryPolygon] = None
+
+class MarkerCreate(BaseModel):
+    name: str
+    marker_type: str
+    x: int
+    z: int
+    description: Optional[str] = ""
+    ore_type: Optional[str] = None
+    ore_quantity: Optional[float] = None
+
 # Utility Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
