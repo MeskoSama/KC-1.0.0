@@ -241,7 +241,7 @@ const AdminMapManagement = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {countries.map(c => (
-                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                              <SelectItem key={c.id} value={c.id}>{c.name} ({c.currency})</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
