@@ -340,6 +340,41 @@ test_plan:
 
 agent_communication:
   - agent: "main"
+    message: "WORLD MAP ENHANCEMENT - Complete Implementation:
+    
+    **New Backend Features:**
+    1. MAP_STATES configuration with economic multipliers for 5 states
+    2. Micro-regions system with mineral data storage
+    3. New endpoints:
+       - GET /api/map/micro-regions - List all micro-regions with calculated values
+       - GET /api/map/micro-regions/{id} - Detailed region info
+       - GET /api/map/distance - Calculate distance between two points
+       - GET /api/map/states - Get state configurations
+       - POST /api/admin/map/micro-regions - Create region
+       - PUT /api/admin/map/micro-regions/{id} - Update region
+       - PUT /api/admin/map/micro-regions/{id}/ore - Update specific ore
+       - DELETE /api/admin/map/micro-regions/{id} - Delete region
+       - POST /api/admin/map/initialize-world-data - Initialize all default data
+       - PUT /api/admin/map/ore-prices/{ore_type} - Update global ore price
+    
+    **Frontend Features:**
+    1. Enhanced WorldMap.jsx with:
+       - Distance measurement tool (click two points)
+       - Layer toggles (Regions, Markers, Ores, Grid)
+       - View modes (Borders, Ores, Density, Satellite)
+       - Micro-region visualization with value display
+       - Economic multiplier display per state
+       - Click to see detailed mineral info
+    
+    2. Enhanced AdminMapManagement.jsx with:
+       - Quick action to initialize world data
+       - Micro-regions tab with full CRUD
+       - Ore editing per region
+       - Visual mineral availability bars
+    
+    Ready for testing."
+
+  - agent: "main"
     message: "MAJOR UPDATE - Bug Fixes and New Features:
     
     **Bug Fixes:**
