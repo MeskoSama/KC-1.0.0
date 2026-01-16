@@ -3576,6 +3576,328 @@ async def update_country_parties(country_id: str, data: PartiesUpdate, admin: di
     return {"message": "Political parties updated successfully"}
 
 
+# ============================================================================
+# WORLD MAP ENDPOINTS
+# ============================================================================
+
+@api_router.get("/map/config")
+async def get_map_config():
+    """Get map configuration including seed, ore prices, and marker types"""
+    return {
+        "world_seed": WORLD_SEED,
+        "ore_prices": ORE_PRICES,
+        "marker_types": MARKER_TYPES
+    }
+
+@api_router.get("/map/territories")
+async def get_all_territories():
+    """Get all territories with their markers"""
+    territories = await db.territories.find({}, {"_id": 0}).to_list(1000)
+    
+    # Add country info to each territory
+    for territory in territories:
+        country = await db.countries.find_one({"id": territory.get("country_id")}, {"_id": 0, "name": 1, "color": 1})
+        if country:
+            territory["country_name"] = country.get("name")
+            territory["country_color"] = country.get("color")
+    
+    return {"territories": territories}
+
+@api_router.get("/map/territories/{territory_id}")
+async def get_territory(territory_id: str):
+    """Get a specific territory"""
+    territory = await db.territories.find_one({"id": territory_id}, {"_id": 0})
+    if not territory:
+        raise HTTPException(status_code=404, detail="Territory not found")
+    return territory
+
+@api_router.get("/map/markers")
+async def get_all_markers():
+    """Get all markers across all territories"""
+    territories = await db.territories.find({}, {"_id": 0}).to_list(1000)
+    
+    all_markers = []
+    for territory in territories:
+        for marker in territory.get("markers", []):
+            marker["territory_id"] = territory.get("id")
+            marker["territory_name"] = territory.get("name")
+            all_markers.append(marker)
+    
+    # Also get standalone markers (not in territories)
+    standalone_markers = await db.map_markers.find({}, {"_id": 0}).to_list(1000)
+    all_markers.extend(standalone_markers)
+    
+    return {"markers": all_markers}
+
+@api_router.get("/map/countries-with-territories")
+async def get_countries_with_territories():
+    """Get all countries with their territories for the map"""
+    countries = await db.countries.find({}, {"_id": 0, "id": 1, "name": 1, "color": 1}).to_list(100)
+    territories = await db.territories.find({}, {"_id": 0}).to_list(1000)
+    
+    result = []
+    for country in countries:
+        country_territories = [t for t in territories if t.get("country_id") == country["id"]]
+        result.append({
+            "country_id": country["id"],
+            "country_name": country["name"],
+            "color": country["color"],
+            "territories": country_territories
+        })
+    
+    return {"countries": result}
+
+@api_router.post("/admin/map/territories")
+async def create_territory(data: TerritoryCreate, admin: dict = Depends(require_admin)):
+    """Create a new territory (admin only)"""
+    # Verify country exists
+    country = await db.countries.find_one({"id": data.country_id})
+    if not country:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    territory_data = data.model_dump()
+    territory_data["id"] = str(uuid.uuid4())
+    territory_data["markers"] = []
+    territory_data["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Convert polygon to dict
+    territory_data["polygon"] = {
+        "points": [{"x": p.x, "z": p.z} for p in data.polygon.points]
+    }
+    
+    await db.territories.insert_one(territory_data)
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Territory created",
+        f"{data.name} for {country['name']}"
+    )
+    
+    return {"message": "Territory created", "territory_id": territory_data["id"]}
+
+@api_router.put("/admin/map/territories/{territory_id}")
+async def update_territory(territory_id: str, data: TerritoryUpdate, admin: dict = Depends(require_admin)):
+    """Update a territory (admin only)"""
+    territory = await db.territories.find_one({"id": territory_id})
+    if not territory:
+        raise HTTPException(status_code=404, detail="Territory not found")
+    
+    update_data = {}
+    if data.name is not None:
+        update_data["name"] = data.name
+    if data.country_id is not None:
+        update_data["country_id"] = data.country_id
+    if data.color is not None:
+        update_data["color"] = data.color
+    if data.polygon is not None:
+        update_data["polygon"] = {
+            "points": [{"x": p.x, "z": p.z} for p in data.polygon.points]
+        }
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.territories.update_one(
+        {"id": territory_id},
+        {"$set": update_data}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Territory updated",
+        f"{territory_id}"
+    )
+    
+    return {"message": "Territory updated"}
+
+@api_router.delete("/admin/map/territories/{territory_id}")
+async def delete_territory(territory_id: str, admin: dict = Depends(require_admin)):
+    """Delete a territory (admin only)"""
+    territory = await db.territories.find_one({"id": territory_id})
+    if not territory:
+        raise HTTPException(status_code=404, detail="Territory not found")
+    
+    await db.territories.delete_one({"id": territory_id})
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Territory deleted",
+        f"{territory.get('name', territory_id)}"
+    )
+    
+    return {"message": "Territory deleted"}
+
+@api_router.post("/admin/map/territories/{territory_id}/markers")
+async def add_marker_to_territory(territory_id: str, data: MarkerCreate, admin: dict = Depends(require_admin)):
+    """Add a marker to a territory (admin only)"""
+    territory = await db.territories.find_one({"id": territory_id})
+    if not territory:
+        raise HTTPException(status_code=404, detail="Territory not found")
+    
+    marker_data = data.model_dump()
+    marker_data["id"] = str(uuid.uuid4())
+    
+    await db.territories.update_one(
+        {"id": territory_id},
+        {"$push": {"markers": marker_data}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Marker added",
+        f"{data.name} ({data.marker_type}) at {data.x}, {data.z}"
+    )
+    
+    return {"message": "Marker added", "marker_id": marker_data["id"]}
+
+@api_router.delete("/admin/map/territories/{territory_id}/markers/{marker_id}")
+async def remove_marker_from_territory(territory_id: str, marker_id: str, admin: dict = Depends(require_admin)):
+    """Remove a marker from a territory (admin only)"""
+    territory = await db.territories.find_one({"id": territory_id})
+    if not territory:
+        raise HTTPException(status_code=404, detail="Territory not found")
+    
+    await db.territories.update_one(
+        {"id": territory_id},
+        {"$pull": {"markers": {"id": marker_id}}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Marker removed",
+        f"Marker {marker_id} from territory {territory_id}"
+    )
+    
+    return {"message": "Marker removed"}
+
+@api_router.post("/admin/map/markers")
+async def create_standalone_marker(data: MarkerCreate, admin: dict = Depends(require_admin)):
+    """Create a standalone marker not attached to any territory (admin only)"""
+    marker_data = data.model_dump()
+    marker_data["id"] = str(uuid.uuid4())
+    marker_data["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.map_markers.insert_one(marker_data)
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Standalone marker created",
+        f"{data.name} ({data.marker_type}) at {data.x}, {data.z}"
+    )
+    
+    return {"message": "Marker created", "marker_id": marker_data["id"]}
+
+@api_router.delete("/admin/map/markers/{marker_id}")
+async def delete_standalone_marker(marker_id: str, admin: dict = Depends(require_admin)):
+    """Delete a standalone marker (admin only)"""
+    result = await db.map_markers.delete_one({"id": marker_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Marker not found")
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Standalone marker deleted",
+        marker_id
+    )
+    
+    return {"message": "Marker deleted"}
+
+@api_router.get("/map/ore-deposits")
+async def get_ore_deposits():
+    """Get all ore deposit markers with their values"""
+    territories = await db.territories.find({}, {"_id": 0}).to_list(1000)
+    
+    ore_deposits = []
+    for territory in territories:
+        for marker in territory.get("markers", []):
+            if marker.get("ore_type") and marker.get("ore_quantity"):
+                ore_info = ORE_PRICES.get(marker["ore_type"], {})
+                deposit = {
+                    **marker,
+                    "territory_id": territory.get("id"),
+                    "territory_name": territory.get("name"),
+                    "ore_name": ore_info.get("name", marker["ore_type"]),
+                    "ore_color": ore_info.get("color", "#888"),
+                    "ore_icon": ore_info.get("icon", "⛏️"),
+                    "price_per_100": ore_info.get("price", 0),
+                    "total_value": ore_info.get("price", 0) * (marker.get("ore_quantity", 0) / 100)
+                }
+                ore_deposits.append(deposit)
+    
+    return {"ore_deposits": ore_deposits, "ore_prices": ORE_PRICES}
+
+@api_router.get("/map/search")
+async def search_map(query: str = "", x: Optional[int] = None, z: Optional[int] = None):
+    """Search the map by name or coordinates"""
+    results = []
+    
+    # Search territories by name
+    if query:
+        territories = await db.territories.find(
+            {"$or": [
+                {"name": {"$regex": query, "$options": "i"}},
+                {"markers.name": {"$regex": query, "$options": "i"}}
+            ]},
+            {"_id": 0}
+        ).to_list(100)
+        
+        for t in territories:
+            results.append({
+                "type": "territory",
+                "id": t["id"],
+                "name": t["name"],
+                "polygon": t.get("polygon")
+            })
+            
+            # Also add matching markers
+            for m in t.get("markers", []):
+                if query.lower() in m.get("name", "").lower():
+                    results.append({
+                        "type": "marker",
+                        "id": m["id"],
+                        "name": m["name"],
+                        "marker_type": m.get("marker_type"),
+                        "x": m["x"],
+                        "z": m["z"]
+                    })
+    
+    # Search by coordinates (find what's at/near this location)
+    if x is not None and z is not None:
+        territories = await db.territories.find({}, {"_id": 0}).to_list(1000)
+        for t in territories:
+            # Check if coordinate is within territory polygon (simple bounding box check)
+            polygon = t.get("polygon", {}).get("points", [])
+            if polygon:
+                min_x = min(p["x"] for p in polygon)
+                max_x = max(p["x"] for p in polygon)
+                min_z = min(p["z"] for p in polygon)
+                max_z = max(p["z"] for p in polygon)
+                
+                if min_x <= x <= max_x and min_z <= z <= max_z:
+                    results.append({
+                        "type": "territory",
+                        "id": t["id"],
+                        "name": t["name"],
+                        "contains_point": True
+                    })
+            
+            # Check markers near coordinates
+            for m in t.get("markers", []):
+                distance = ((m["x"] - x) ** 2 + (m["z"] - z) ** 2) ** 0.5
+                if distance < 500:  # Within 500 blocks
+                    results.append({
+                        "type": "marker",
+                        "id": m["id"],
+                        "name": m["name"],
+                        "marker_type": m.get("marker_type"),
+                        "x": m["x"],
+                        "z": m["z"],
+                        "distance": round(distance)
+                    })
+    
+    return {"results": results}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
