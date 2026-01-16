@@ -167,6 +167,21 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ TESTED: Exchange rate function working correctly. GRP confirmed as base currency, all required rates present (GRP_TO_NIM, GRP_TO_VDD, GRP_TO_KKD, GRP_TO_USD). Currency conversion logic properly implemented."
+
+  - task: "World Map API endpoints implementation"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented complete World Map API system with MAP_STATES configuration, micro-regions with mineral data, territories, and all required endpoints for map functionality."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All World Map API endpoints fully functional. GET /api/map/config returns world_seed, ore_prices, marker_types, states with economic_multiplier, unit, currency. GET /api/map/states returns 5 states with economic_multiplier. GET /api/map/distance calculates distance correctly (5656.85 blocks for test coordinates). GET /api/map/territories and /api/map/micro-regions work before/after initialization. POST /api/admin/map/initialize-world-data requires admin auth and creates 5 territories and 6 micro-regions with complete mineral data (13 ore types with total, available, base_price values). Admin user meskop configured successfully. 17/17 tests passed (100% success rate)."
   
   - task: "Add transaction history endpoint"
     implemented: true
