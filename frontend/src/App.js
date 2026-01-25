@@ -21,6 +21,7 @@ import CountryInfo from "./pages/CountryInfo";
 import CountryEconomicShare from "./pages/CountryEconomicShare";
 import CountryLeaders from "./pages/CountryLeaders";
 import WorldMap from "./pages/WorldMap";
+import ServerAccounts from "./pages/ServerAccounts";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -91,6 +92,8 @@ function App() {
           <Route path="/countries" element={user ? <CountryInfo user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/countries/economic-share" element={user ? <CountryEconomicShare user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/countries/leaders" element={user ? <CountryLeaders user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
+          <Route path="/accounts" element={user ? <ServerAccounts user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
+          {/* Keep WorldMap route but hidden from navbar */}
           <Route path="/map" element={user ? <WorldMap user={user} onLogout={logout} /> : <Navigate to="/auth" />} />
           <Route path="/admin" element={user && user.is_admin ? <AdminPanel user={user} onLogout={logout} /> : <Navigate to="/dashboard" />} />
         </Routes>
