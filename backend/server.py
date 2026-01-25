@@ -1087,6 +1087,224 @@ class OreUpdateRequest(BaseModel):
     available: Optional[float] = None
     base_price: Optional[float] = None
 
+# ============================================================================
+# BANKING SYSTEM CONFIGURATION
+# ============================================================================
+
+# All currencies in the system
+CURRENCIES = ["GRP", "NIM", "VDD", "KKD", "EGD", "EP"]
+
+# Bank configurations with home currency and card colors
+BANKS = {
+    "germania_bank": {
+        "name": "Germania Bank",
+        "home_currency": "GRP",
+        "card_colors": {
+            "credit": "#87CEEB",      # light blue
+            "debit": "#0000FF",       # blue
+            "government": "#000000",   # black
+            "platinum": "#E5E4E2",    # platinum gray
+            "gold": "#000000",        # black
+            "investor": "#FFFFFF"      # white
+        }
+    },
+    "sakura_bank": {
+        "name": "Sakura Bank",
+        "home_currency": "NIM",
+        "card_colors": {
+            "credit": "#FFB6C1",      # light red
+            "debit": "#8B0000",       # dark red
+            "government": "#000000",   # black
+            "platinum": "#E5E4E2",    # platinum gray
+            "gold": "#000000",        # black
+            "investor": "#FFFFFF"      # white
+        }
+    },
+    "veltronia_national_bank": {
+        "name": "Veltronia National Bank",
+        "home_currency": "VDD",
+        "card_colors": {
+            "credit": "#D2B48C",      # light brown
+            "debit": "#8B4513",       # brown
+            "government": "#000000",   # black
+            "platinum": "#E5E4E2",    # platinum gray
+            "gold": "#FFD700",        # yellow/gold
+            "investor": "#FFFFFF"      # white
+        }
+    },
+    "cordoba_bank": {
+        "name": "Cordoba Bank",
+        "home_currency": "KKD",
+        "card_colors": {
+            "credit": "#90EE90",      # light green
+            "debit": "#228B22",       # green
+            "government": "#000000",   # black
+            "platinum": "#E5E4E2",    # platinum gray
+            "gold": "#F4C430",        # saffron
+            "investor": "#FFFFFF"      # white
+        }
+    },
+    "sumerbank": {
+        "name": "Sumerbank",
+        "home_currency": "EGD",
+        "card_colors": {
+            "credit": "#DDA0DD",      # light purple
+            "debit": "#800080",       # purple
+            "government": "#000000",   # black
+            "platinum": "#E5E4E2",    # platinum gray
+            "gold": "#F4C430",        # saffron
+            "investor": "#FFFFFF"      # white
+        }
+    }
+}
+
+# Card types
+CARD_TYPES = ["credit", "debit", "government", "platinum", "gold", "investor"]
+
+# Ranking colors for top 3
+RANKING_COLORS = {
+    "1": "#FFFF00",      # neon bright yellow
+    "2": "#C0C0C0",      # neon bright light gray
+    "3": "#B87333"       # neon bright copper
+}
+
+# Default sample accounts
+DEFAULT_BANK_ACCOUNTS = [
+    {
+        "username": "bot1",
+        "bank_accounts": [
+            {
+                "bank_id": "germania_bank",
+                "cards": [
+                    {
+                        "card_type": "debit",
+                        "balances": {"GRP": 500000, "NIM": 0, "VDD": 1000, "KKD": 0, "EGD": 0, "EP": 500},
+                        "foreign_currencies_opened": ["VDD", "EP"]
+                    },
+                    {
+                        "card_type": "credit",
+                        "debt": {"GRP": 10000, "NIM": 0, "VDD": 0, "KKD": 0, "EGD": 0, "EP": 0}
+                    }
+                ]
+            },
+            {
+                "bank_id": "sakura_bank",
+                "cards": [
+                    {
+                        "card_type": "debit",
+                        "balances": {"GRP": 0, "NIM": 250000, "VDD": 0, "KKD": 5000, "EGD": 0, "EP": 0},
+                        "foreign_currencies_opened": ["GRP", "KKD"]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "username": "bot2",
+        "bank_accounts": [
+            {
+                "bank_id": "cordoba_bank",
+                "cards": [
+                    {
+                        "card_type": "debit",
+                        "balances": {"GRP": 0, "NIM": 0, "VDD": 0, "KKD": 1000000, "EGD": 0, "EP": 0},
+                        "foreign_currencies_opened": []
+                    },
+                    {
+                        "card_type": "gold",
+                        "balances": {"GRP": 100000, "NIM": 50000, "VDD": 0, "KKD": 200000, "EGD": 0, "EP": 10000},
+                        "foreign_currencies_opened": ["GRP", "NIM", "EP"]
+                    },
+                    {
+                        "card_type": "credit",
+                        "debt": {"GRP": 0, "NIM": 5000, "VDD": 0, "KKD": 25000, "EGD": 0, "EP": 0}
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "username": "bot3",
+        "bank_accounts": [
+            {
+                "bank_id": "veltronia_national_bank",
+                "cards": [
+                    {
+                        "card_type": "debit",
+                        "balances": {"GRP": 0, "NIM": 0, "VDD": 750000, "KKD": 0, "EGD": 0, "EP": 0},
+                        "foreign_currencies_opened": []
+                    },
+                    {
+                        "card_type": "government",
+                        "balances": {"GRP": 5000000, "NIM": 0, "VDD": 2000000, "KKD": 0, "EGD": 0, "EP": 0},
+                        "foreign_currencies_opened": ["GRP"]
+                    }
+                ]
+            },
+            {
+                "bank_id": "sumerbank",
+                "cards": [
+                    {
+                        "card_type": "investor",
+                        "balances": {"GRP": 0, "NIM": 0, "VDD": 0, "KKD": 0, "EGD": 100000, "EP": 50000},
+                        "foreign_currencies_opened": ["EP"]
+                    }
+                ]
+            }
+        ]
+    }
+]
+
+# Pydantic models for banking
+class CardBalance(BaseModel):
+    GRP: float = 0
+    NIM: float = 0
+    VDD: float = 0
+    KKD: float = 0
+    EGD: float = 0
+    EP: float = 0
+
+class CardCreate(BaseModel):
+    card_type: str
+    balances: Optional[Dict[str, float]] = None
+    debt: Optional[Dict[str, float]] = None
+    foreign_currencies_opened: List[str] = []
+
+class CardUpdate(BaseModel):
+    card_type: Optional[str] = None
+    balances: Optional[Dict[str, float]] = None
+    debt: Optional[Dict[str, float]] = None
+    foreign_currencies_opened: Optional[List[str]] = None
+
+class BankAccountCreate(BaseModel):
+    bank_id: str
+    cards: List[CardCreate] = []
+
+class ServerAccountCreate(BaseModel):
+    username: str
+    bank_accounts: List[BankAccountCreate] = []
+
+class ServerAccountUpdate(BaseModel):
+    username: Optional[str] = None
+
+class BalanceUpdateRequest(BaseModel):
+    bank_id: str
+    card_type: str
+    currency: str
+    amount: float
+    operation: str = "set"  # set, add, subtract, reset
+
+class ForeignCurrencyRequest(BaseModel):
+    bank_id: str
+    card_type: str
+    currency: str
+    open: bool  # True to open, False to close
+
+class RankingColorsUpdate(BaseModel):
+    rank_1: Optional[str] = None
+    rank_2: Optional[str] = None
+    rank_3: Optional[str] = None
+
 # Utility Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
