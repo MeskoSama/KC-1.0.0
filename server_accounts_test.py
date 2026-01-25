@@ -427,7 +427,7 @@ class ServerAccountsAPITester:
             
             if response.status_code == 200:
                 data = response.json()
-                account_id = data.get("account_id")
+                account_id = data.get("id")  # Changed from "account_id" to "id"
                 
                 if account_id:
                     self.log_test(
@@ -440,7 +440,7 @@ class ServerAccountsAPITester:
                     self.log_test(
                         "POST /api/admin/accounts", 
                         False, 
-                        error="No account_id returned"
+                        error="No account ID returned in response"
                     )
                     return None
                     
