@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, TrendingUp, Users, Home, Target, DollarSign, Settings, FileText, ArrowRightLeft, Coins, Landmark, Map } from 'lucide-react';
+import { Shield, TrendingUp, Users, Home, Target, DollarSign, Settings, FileText, ArrowRightLeft, Coins, Landmark, CreditCard } from 'lucide-react';
 import axios from 'axios';
 import { API } from '../App';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ import AdminInvestments from './AdminInvestments';
 import AdminExchangeRates from './AdminExchangeRates';
 import AdminCurrencyManagement from './AdminCurrencyManagement';
 import AdminCountryManagement from './AdminCountryManagement';
-import AdminMapManagement from './AdminMapManagement';
+import AdminAccountsManagement from './AdminAccountsManagement';
 
 const AdminPanel = ({ user, onLogout }) => {
   const [stats, setStats] = useState({});
