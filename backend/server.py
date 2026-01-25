@@ -4644,6 +4644,513 @@ async def update_ore_price(ore_type: str, price: float, admin: dict = Depends(re
     return {"message": f"Ore price updated for {ore_type}", "new_price": price, "regions_updated": updated_count}
 
 
+# ============================================================================
+# SERVER BANK ACCOUNTS ENDPOINTS
+# ============================================================================
+
+def calculate_total_wealth(account: dict) -> float:
+    """Calculate total wealth in GRP equivalent"""
+    total = 0
+    
+    # Get exchange rates from config
+    exchange_rates = {
+        "GRP": 1.0,
+        "NIM": 1 / 112.4375,   # 1 GRP = 112.4375 NIM
+        "VDD": 1 / 118.05937,  # approximate
+        "KKD": 1 / 100.0,      # approximate
+        "EGD": 1 / 118.05937,  # 1 GRP = 118.05937 EGD
+        "EP": 1 / 112.4375     # 1 GRP = 112.4375 EP
+    }
+    
+    for bank_account in account.get("bank_accounts", []):
+        for card in bank_account.get("cards", []):
+            # Add balances (positive)
+            balances = card.get("balances", {})
+            for currency, amount in balances.items():
+                if amount > 0:
+                    total += amount * exchange_rates.get(currency, 0)
+            
+            # Subtract debt (negative)
+            debt = card.get("debt", {})
+            for currency, amount in debt.items():
+                if amount > 0:
+                    total -= amount * exchange_rates.get(currency, 0)
+    
+    return round(total, 2)
+
+@api_router.get("/accounts/config")
+async def get_accounts_config():
+    """Get banking configuration"""
+    # Get ranking colors from DB or use defaults
+    config = await db.bank_config.find_one({"type": "ranking_colors"}, {"_id": 0})
+    ranking_colors = config.get("colors", RANKING_COLORS) if config else RANKING_COLORS
+    
+    return {
+        "banks": BANKS,
+        "card_types": CARD_TYPES,
+        "currencies": CURRENCIES,
+        "ranking_colors": ranking_colors
+    }
+
+@api_router.get("/accounts")
+async def get_all_accounts():
+    """Get all server accounts with wealth ranking"""
+    accounts = await db.server_accounts.find({}, {"_id": 0}).to_list(1000)
+    
+    # Calculate wealth for each account
+    for account in accounts:
+        account["total_wealth"] = calculate_total_wealth(account)
+    
+    # Sort by wealth (descending)
+    accounts.sort(key=lambda x: x.get("total_wealth", 0), reverse=True)
+    
+    # Add rank
+    for i, account in enumerate(accounts):
+        account["rank"] = i + 1
+    
+    return {"accounts": accounts, "total_count": len(accounts)}
+
+@api_router.get("/accounts/{account_id}")
+async def get_account(account_id: str):
+    """Get specific account details"""
+    account = await db.server_accounts.find_one({"id": account_id}, {"_id": 0})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    account["total_wealth"] = calculate_total_wealth(account)
+    return account
+
+@api_router.get("/accounts/by-username/{username}")
+async def get_account_by_username(username: str):
+    """Get account by username"""
+    account = await db.server_accounts.find_one(
+        {"username": {"$regex": f"^{username}$", "$options": "i"}}, 
+        {"_id": 0}
+    )
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    account["total_wealth"] = calculate_total_wealth(account)
+    return account
+
+@api_router.post("/admin/accounts")
+async def create_account(data: ServerAccountCreate, admin: dict = Depends(require_admin)):
+    """Create a new server account (admin only)"""
+    # Check if username exists
+    existing = await db.server_accounts.find_one(
+        {"username": {"$regex": f"^{data.username}$", "$options": "i"}}
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    account_data = {
+        "id": str(uuid.uuid4()),
+        "username": data.username,
+        "bank_accounts": [],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Process bank accounts
+    for bank_acc in data.bank_accounts:
+        if bank_acc.bank_id not in BANKS:
+            raise HTTPException(status_code=400, detail=f"Invalid bank: {bank_acc.bank_id}")
+        
+        bank_data = {
+            "bank_id": bank_acc.bank_id,
+            "cards": []
+        }
+        
+        for card in bank_acc.cards:
+            if card.card_type not in CARD_TYPES:
+                raise HTTPException(status_code=400, detail=f"Invalid card type: {card.card_type}")
+            
+            card_data = {
+                "id": str(uuid.uuid4()),
+                "card_type": card.card_type,
+                "balances": card.balances or {c: 0 for c in CURRENCIES},
+                "debt": card.debt or {c: 0 for c in CURRENCIES},
+                "foreign_currencies_opened": card.foreign_currencies_opened or []
+            }
+            bank_data["cards"].append(card_data)
+        
+        account_data["bank_accounts"].append(bank_data)
+    
+    await db.server_accounts.insert_one(account_data)
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Account created",
+        data.username
+    )
+    
+    return {"message": "Account created", "id": account_data["id"]}
+
+@api_router.put("/admin/accounts/{account_id}")
+async def update_account(account_id: str, data: ServerAccountUpdate, admin: dict = Depends(require_admin)):
+    """Update account basic info (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if data.username is not None:
+        # Check if new username exists
+        existing = await db.server_accounts.find_one({
+            "username": {"$regex": f"^{data.username}$", "$options": "i"},
+            "id": {"$ne": account_id}
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        update_data["username"] = data.username
+    
+    await db.server_accounts.update_one({"id": account_id}, {"$set": update_data})
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Account updated",
+        f"{account['username']} -> {data.model_dump(exclude_none=True)}"
+    )
+    
+    return {"message": "Account updated"}
+
+@api_router.delete("/admin/accounts/{account_id}")
+async def delete_account(account_id: str, admin: dict = Depends(require_admin)):
+    """Delete an account (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    await db.server_accounts.delete_one({"id": account_id})
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Account deleted",
+        account["username"]
+    )
+    
+    return {"message": "Account deleted"}
+
+@api_router.post("/admin/accounts/{account_id}/bank")
+async def add_bank_to_account(account_id: str, data: BankAccountCreate, admin: dict = Depends(require_admin)):
+    """Add a bank account to user (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    if data.bank_id not in BANKS:
+        raise HTTPException(status_code=400, detail=f"Invalid bank: {data.bank_id}")
+    
+    # Check if user already has this bank
+    existing_banks = [ba["bank_id"] for ba in account.get("bank_accounts", [])]
+    if data.bank_id in existing_banks:
+        raise HTTPException(status_code=400, detail="User already has account at this bank")
+    
+    bank_data = {
+        "bank_id": data.bank_id,
+        "cards": []
+    }
+    
+    for card in data.cards:
+        if card.card_type not in CARD_TYPES:
+            raise HTTPException(status_code=400, detail=f"Invalid card type: {card.card_type}")
+        
+        card_data = {
+            "id": str(uuid.uuid4()),
+            "card_type": card.card_type,
+            "balances": card.balances or {c: 0 for c in CURRENCIES},
+            "debt": card.debt or {c: 0 for c in CURRENCIES},
+            "foreign_currencies_opened": card.foreign_currencies_opened or []
+        }
+        bank_data["cards"].append(card_data)
+    
+    await db.server_accounts.update_one(
+        {"id": account_id},
+        {"$push": {"bank_accounts": bank_data}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Bank added to account",
+        f"{account['username']}: {BANKS[data.bank_id]['name']}"
+    )
+    
+    return {"message": "Bank account added"}
+
+@api_router.delete("/admin/accounts/{account_id}/bank/{bank_id}")
+async def remove_bank_from_account(account_id: str, bank_id: str, admin: dict = Depends(require_admin)):
+    """Remove a bank from user account (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    await db.server_accounts.update_one(
+        {"id": account_id},
+        {"$pull": {"bank_accounts": {"bank_id": bank_id}}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Bank removed from account",
+        f"{account['username']}: {bank_id}"
+    )
+    
+    return {"message": "Bank account removed"}
+
+@api_router.post("/admin/accounts/{account_id}/card")
+async def add_card_to_account(account_id: str, bank_id: str, data: CardCreate, admin: dict = Depends(require_admin)):
+    """Add a card to user's bank account (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    if data.card_type not in CARD_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid card type: {data.card_type}")
+    
+    # Find bank account
+    bank_idx = None
+    for i, ba in enumerate(account.get("bank_accounts", [])):
+        if ba["bank_id"] == bank_id:
+            bank_idx = i
+            break
+    
+    if bank_idx is None:
+        raise HTTPException(status_code=404, detail="User doesn't have account at this bank")
+    
+    card_data = {
+        "id": str(uuid.uuid4()),
+        "card_type": data.card_type,
+        "balances": data.balances or {c: 0 for c in CURRENCIES},
+        "debt": data.debt or {c: 0 for c in CURRENCIES},
+        "foreign_currencies_opened": data.foreign_currencies_opened or []
+    }
+    
+    await db.server_accounts.update_one(
+        {"id": account_id},
+        {"$push": {f"bank_accounts.{bank_idx}.cards": card_data}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Card added to account",
+        f"{account['username']}: {data.card_type} at {bank_id}"
+    )
+    
+    return {"message": "Card added", "card_id": card_data["id"]}
+
+@api_router.delete("/admin/accounts/{account_id}/card/{bank_id}/{card_id}")
+async def remove_card_from_account(account_id: str, bank_id: str, card_id: str, admin: dict = Depends(require_admin)):
+    """Remove a card from user's bank account (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    # Find bank account index
+    bank_idx = None
+    for i, ba in enumerate(account.get("bank_accounts", [])):
+        if ba["bank_id"] == bank_id:
+            bank_idx = i
+            break
+    
+    if bank_idx is None:
+        raise HTTPException(status_code=404, detail="User doesn't have account at this bank")
+    
+    await db.server_accounts.update_one(
+        {"id": account_id},
+        {"$pull": {f"bank_accounts.{bank_idx}.cards": {"id": card_id}}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Card removed from account",
+        f"{account['username']}: {card_id} at {bank_id}"
+    )
+    
+    return {"message": "Card removed"}
+
+@api_router.put("/admin/accounts/{account_id}/balance")
+async def update_card_balance(account_id: str, data: BalanceUpdateRequest, admin: dict = Depends(require_admin)):
+    """Update balance on a specific card (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    if data.currency not in CURRENCIES:
+        raise HTTPException(status_code=400, detail=f"Invalid currency: {data.currency}")
+    
+    # Find bank and card
+    bank_idx = None
+    card_idx = None
+    
+    for i, ba in enumerate(account.get("bank_accounts", [])):
+        if ba["bank_id"] == data.bank_id:
+            bank_idx = i
+            for j, card in enumerate(ba.get("cards", [])):
+                if card["card_type"] == data.card_type:
+                    card_idx = j
+                    break
+            break
+    
+    if bank_idx is None or card_idx is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    card = account["bank_accounts"][bank_idx]["cards"][card_idx]
+    
+    # Determine if updating balance or debt
+    is_credit = data.card_type == "credit"
+    field = "debt" if is_credit else "balances"
+    
+    current_value = card.get(field, {}).get(data.currency, 0)
+    
+    if data.operation == "set":
+        new_value = data.amount
+    elif data.operation == "add":
+        new_value = current_value + data.amount
+    elif data.operation == "subtract":
+        new_value = current_value - data.amount
+    elif data.operation == "reset":
+        new_value = 0
+    else:
+        raise HTTPException(status_code=400, detail=f"Invalid operation: {data.operation}")
+    
+    # Don't allow negative balance (except for credit which tracks debt)
+    if not is_credit and new_value < 0:
+        new_value = 0
+    
+    await db.server_accounts.update_one(
+        {"id": account_id},
+        {"$set": {f"bank_accounts.{bank_idx}.cards.{card_idx}.{field}.{data.currency}": new_value}}
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Balance updated",
+        f"{account['username']}: {data.card_type} at {data.bank_id} - {data.currency} {data.operation} {data.amount} -> {new_value}"
+    )
+    
+    return {"message": "Balance updated", "new_value": new_value}
+
+@api_router.put("/admin/accounts/{account_id}/foreign-currency")
+async def toggle_foreign_currency(account_id: str, data: ForeignCurrencyRequest, admin: dict = Depends(require_admin)):
+    """Open or close foreign currency account on a card (admin only)"""
+    account = await db.server_accounts.find_one({"id": account_id})
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    if data.currency not in CURRENCIES:
+        raise HTTPException(status_code=400, detail=f"Invalid currency: {data.currency}")
+    
+    # Find bank and card
+    bank_idx = None
+    card_idx = None
+    
+    for i, ba in enumerate(account.get("bank_accounts", [])):
+        if ba["bank_id"] == data.bank_id:
+            bank_idx = i
+            for j, card in enumerate(ba.get("cards", [])):
+                if card["card_type"] == data.card_type:
+                    card_idx = j
+                    break
+            break
+    
+    if bank_idx is None or card_idx is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    card = account["bank_accounts"][bank_idx]["cards"][card_idx]
+    current_opened = card.get("foreign_currencies_opened", [])
+    
+    if data.open:
+        if data.currency not in current_opened:
+            current_opened.append(data.currency)
+    else:
+        if data.currency in current_opened:
+            current_opened.remove(data.currency)
+    
+    await db.server_accounts.update_one(
+        {"id": account_id},
+        {"$set": {f"bank_accounts.{bank_idx}.cards.{card_idx}.foreign_currencies_opened": current_opened}}
+    )
+    
+    action = "opened" if data.open else "closed"
+    await log_admin_action(
+        admin["minecraft_username"],
+        f"Foreign currency {action}",
+        f"{account['username']}: {data.currency} on {data.card_type} at {data.bank_id}"
+    )
+    
+    return {"message": f"Foreign currency account {action}"}
+
+@api_router.put("/admin/accounts/config/ranking-colors")
+async def update_ranking_colors(data: RankingColorsUpdate, admin: dict = Depends(require_admin)):
+    """Update ranking colors for top 3 (admin only)"""
+    colors = {}
+    if data.rank_1:
+        colors["1"] = data.rank_1
+    if data.rank_2:
+        colors["2"] = data.rank_2
+    if data.rank_3:
+        colors["3"] = data.rank_3
+    
+    await db.bank_config.update_one(
+        {"type": "ranking_colors"},
+        {"$set": {"colors": {**RANKING_COLORS, **colors}}},
+        upsert=True
+    )
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Ranking colors updated",
+        str(colors)
+    )
+    
+    return {"message": "Ranking colors updated"}
+
+@api_router.post("/admin/accounts/initialize")
+async def initialize_sample_accounts(admin: dict = Depends(require_admin)):
+    """Initialize sample accounts for testing (admin only)"""
+    initialized = 0
+    
+    for account_data in DEFAULT_BANK_ACCOUNTS:
+        existing = await db.server_accounts.find_one(
+            {"username": {"$regex": f"^{account_data['username']}$", "$options": "i"}}
+        )
+        if not existing:
+            # Process bank accounts and add IDs to cards
+            processed_accounts = []
+            for bank_acc in account_data["bank_accounts"]:
+                processed_bank = {
+                    "bank_id": bank_acc["bank_id"],
+                    "cards": []
+                }
+                for card in bank_acc["cards"]:
+                    processed_card = {
+                        "id": str(uuid.uuid4()),
+                        "card_type": card["card_type"],
+                        "balances": card.get("balances", {c: 0 for c in CURRENCIES}),
+                        "debt": card.get("debt", {c: 0 for c in CURRENCIES}),
+                        "foreign_currencies_opened": card.get("foreign_currencies_opened", [])
+                    }
+                    processed_bank["cards"].append(processed_card)
+                processed_accounts.append(processed_bank)
+            
+            new_account = {
+                "id": str(uuid.uuid4()),
+                "username": account_data["username"],
+                "bank_accounts": processed_accounts,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.server_accounts.insert_one(new_account)
+            initialized += 1
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Sample accounts initialized",
+        f"{initialized} accounts created"
+    )
+    
+    return {"message": f"Initialized {initialized} sample accounts"}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
