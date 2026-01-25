@@ -105,17 +105,32 @@
 user_problem_statement: "Germania Empire Minecraft Marketplace - A full-featured economy platform for Minecraft server with multi-currency support, real estate marketplace, investments, bounties, and Stripe payment integration. User requested fixes and improvements to make it production-ready. Latest fix: Stock buy/sell bug, added EP and EGD currencies, comprehensive admin currency management."
 
 backend:
+  - task: "Server Accounts API endpoints implementation"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All Server Accounts API endpoints fully functional. GET /api/accounts/config returns 5 banks (germania_bank, sakura_bank, veltronia_national_bank, cordoba_bank, sumerbank) with home_currency, 6 card_types, 6 currencies, ranking_colors. GET /api/accounts returns proper wealth ranking. POST /api/admin/accounts/initialize creates 3 sample accounts (bot1, bot2, bot3) with admin auth. GET /api/accounts/{id} returns detailed account info. POST /api/admin/accounts creates new accounts. POST /api/admin/accounts/{id}/bank adds banks. PUT /api/admin/accounts/{id}/balance updates balances. Wealth calculation in GRP equivalent working correctly. 9/9 tests passed (100% success rate)."
+
   - task: "Fix stock buy/sell endpoint to accept JSON body"
     implemented: true
     working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Fixed buy_investment and sell_investment endpoints to use InvestmentOrder Pydantic model instead of query params. Frontend sends JSON body with symbol and quantity."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Stock buy/sell endpoints correctly accept JSON body. POST /api/investments/buy with JSON {\"symbol\": \"NIM-IMPERIAL-IND\", \"quantity\": 1} properly processed. Endpoint validates JSON structure and returns appropriate error for insufficient balance. JSON body format working as expected."
   
   - task: "Add EP and EGD currencies"
     implemented: true
