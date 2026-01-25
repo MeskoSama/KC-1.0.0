@@ -271,7 +271,7 @@ class CurrencyStockTester:
             self.log_test(
                 "GET /api/investments", 
                 True, 
-                f"Found {len(investments)} investments, testing with {stock_symbol}"
+                f"Found {len(investments_list)} investments, testing with {stock_symbol}"
             )
             
             # Test buy endpoint with JSON body (should fail due to insufficient balance, but endpoint should work)
