@@ -153,11 +153,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Created comprehensive currency management: /api/currencies (public list), /api/currencies/rates (full matrix), /api/admin/currencies (CRUD), /api/admin/exchange-rate/direct (update specific rates), /api/admin/currencies/initialize (reset to defaults)."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Centralized currency management fully operational. GET /api/currencies returns public currency list. GET /api/currencies/rates returns complete exchange rate matrix. POST /api/admin/currencies/initialize works with admin auth. PUT /api/admin/exchange-rate/direct updates specific rates successfully."
   
   - task: "Admin currency management endpoints"
     implemented: true
