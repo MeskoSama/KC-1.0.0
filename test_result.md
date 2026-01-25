@@ -355,6 +355,36 @@ test_plan:
 
 agent_communication:
   - agent: "main"
+    message: "SERVER ACCOUNTS FEATURE - Complete Implementation:
+    
+    **New Feature: Server Account Sorting** (replaced World Map)
+    
+    **Backend:**
+    - Banks: Germania Bank (GRP), Sakura Bank (NIM), Veltronia National Bank (VDD), Cordoba Bank (KKD), Sumerbank (EGD)
+    - Card Types: Credit, Debit, Government, Platinum, Gold, Investor
+    - Each bank has home currency + foreign currency accounts
+    - Wealth ranking calculated in GRP equivalent
+    
+    **New Endpoints:**
+    - GET /api/accounts/config - Bank configurations
+    - GET /api/accounts - All accounts with wealth ranking
+    - GET /api/accounts/{id} - Account details
+    - POST /api/admin/accounts - Create account
+    - POST /api/admin/accounts/{id}/bank - Add bank
+    - POST /api/admin/accounts/{id}/card - Add card
+    - PUT /api/admin/accounts/{id}/balance - Update balance
+    - PUT /api/admin/accounts/{id}/foreign-currency - Toggle foreign currency
+    - PUT /api/admin/accounts/config/ranking-colors - Update ranking colors
+    - POST /api/admin/accounts/initialize - Create sample accounts (bot1, bot2, bot3)
+    
+    **Frontend:**
+    - /accounts page with wealth ranking, expandable banks/cards
+    - Admin Panel -> Accounts tab for management
+    - Navbar updated: Map link hidden, Accounts link added
+    
+    Ready for testing."
+
+  - agent: "main"
     message: "WORLD MAP ENHANCEMENT - Complete Implementation:
     
     **New Backend Features:**
