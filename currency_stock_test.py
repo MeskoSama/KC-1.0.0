@@ -254,7 +254,8 @@ class CurrencyStockTester:
                 return False
             
             investments = response.json()
-            if not investments:
+            investments_list = investments.get("investments", [])
+            if not investments_list:
                 self.log_test(
                     "Stock Endpoints Test", 
                     False, 
@@ -263,7 +264,7 @@ class CurrencyStockTester:
                 return False
             
             # Find a stock to test with
-            test_stock = investments[0]
+            test_stock = investments_list[0]
             stock_symbol = test_stock.get("symbol")
             stock_price = test_stock.get("current_price", 0)
             
