@@ -243,7 +243,7 @@ class CurrencyStockTester:
             headers = self.get_headers(admin=False)
             
             # First, get available investments
-            response = self.session.get(f"{BASE_URL}/investments")
+            response = self.session.get(f"{BASE_URL}/investments", headers=headers)
             
             if response.status_code != 200:
                 self.log_test(
