@@ -369,10 +369,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Test fixed stock buy/sell endpoints with JSON body"
-    - "Test new currencies (EP, EGD) in exchange system"
-    - "Test admin currency management endpoints"
-    - "Test currency conversion with all 6 currencies"
+    - "Server Accounts API endpoints implementation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
