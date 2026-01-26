@@ -1406,20 +1406,27 @@ async def register(data: UserRegister):
 
 @api_router.post("/auth/login")
 async def login(data: UserLogin):
+    logger.info(f"Login attempt for: {data.minecraft_username}")
     user = await db.users.find_one({"minecraft_username": data.minecraft_username}, {"_id": 0})
     if not user:
+        logger.info(f"User not found: {data.minecraft_username}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Check if user is banned
     if user.get("banned", False):
         raise HTTPException(status_code=403, detail="Account has been banned")
     
-    if user["server_code"] != data.server_code:
+    logger.info(f"Server code check: '{user.get('server_code')}' vs '{data.server_code}'")
+    if user.get("server_code") != data.server_code:
+        logger.info("Server code mismatch")
         raise HTTPException(status_code=401, detail="Invalid server code")
     
+    logger.info("Verifying password...")
     if not verify_password(data.password, user["password_hash"]):
+        logger.info("Password verification failed")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    logger.info("Login successful!")
     role = user.get("role", "user")
     token = create_jwt_token(user["id"], user["minecraft_username"], role)
     
