@@ -3164,6 +3164,27 @@ async def update_stock_name(data: StockNameUpdate, admin: dict = Depends(require
         "new_name": data.new_name
     }
 
+@api_router.delete("/admin/investment/{symbol}")
+async def delete_stock(symbol: str, admin: dict = Depends(require_admin)):
+    """Delete a stock (admin/superadmin only)"""
+    investment = await db.investments.find_one({"symbol": symbol}, {"_id": 0})
+    if not investment:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    
+    # Delete the stock
+    await db.investments.delete_one({"symbol": symbol})
+    
+    await log_admin_action(
+        admin["minecraft_username"],
+        "Stock deleted",
+        f"{symbol}: {investment['name']}"
+    )
+    
+    return {
+        "message": "Stock deleted successfully",
+        "symbol": symbol
+    }
+
 @api_router.put("/admin/investment/price")
 async def update_stock_price(data: StockPriceUpdate, admin: dict = Depends(require_admin)):
     """Update stock price and add to price_history (admin/superadmin only)"""
