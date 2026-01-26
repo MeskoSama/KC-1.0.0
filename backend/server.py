@@ -3080,8 +3080,9 @@ async def create_stock(data: StockCreate, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=400, detail="Stock symbol already exists")
     
     # Validate currency
-    if data.currency not in ["NIM", "GRP", "VDD", "KKD"]:
-        raise HTTPException(status_code=400, detail="Invalid currency")
+    valid_currencies = ["NIM", "GRP", "VDD", "KKD", "EGD", "EP"]
+    if data.currency not in valid_currencies:
+        raise HTTPException(status_code=400, detail=f"Invalid currency. Valid: {valid_currencies}")
     
     # Create investment document
     investment = {
@@ -3090,6 +3091,10 @@ async def create_stock(data: StockCreate, admin: dict = Depends(require_admin)):
         "name": data.name,
         "currency": data.currency,
         "current_price": data.current_price,
+        "previous_price": data.current_price,
+        "type": data.type if hasattr(data, 'type') else "stock",
+        "total_shares": 1000000,
+        "available_shares": 1000000,
         "price_history": [
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
