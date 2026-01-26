@@ -4681,14 +4681,47 @@ def calculate_total_wealth(account: dict) -> float:
     """Calculate total wealth in GRP equivalent"""
     total = 0
     
-    # Get exchange rates from config
+    # These will be updated from DB if available
     exchange_rates = {
         "GRP": 1.0,
-        "NIM": 1 / 112.4375,   # 1 GRP = 112.4375 NIM
-        "VDD": 1 / 118.05937,  # approximate
-        "KKD": 1 / 100.0,      # approximate
-        "EGD": 1 / 118.05937,  # 1 GRP = 118.05937 EGD
-        "EP": 1 / 112.4375     # 1 GRP = 112.4375 EP
+        "NIM": 0.62267,   # NIM_TO_GRP
+        "VDD": 0.41909,   # VDD_TO_GRP
+        "KKD": 0.43791,   # KKD_TO_GRP
+        "EGD": 0.00847,   # EGD_TO_GRP
+        "EP": 0.008888    # EP_TO_GRP
+    }
+    
+    for bank_account in account.get("bank_accounts", []):
+        for card in bank_account.get("cards", []):
+            # Add balances (positive)
+            balances = card.get("balances", {})
+            for currency, amount in balances.items():
+                if amount > 0:
+                    total += amount * exchange_rates.get(currency, 0)
+            
+            # Subtract debt (negative)
+            debt = card.get("debt", {})
+            for currency, amount in debt.items():
+                if amount > 0:
+                    total -= amount * exchange_rates.get(currency, 0)
+    
+    return round(total, 2)
+
+async def calculate_total_wealth_async(account: dict) -> float:
+    """Calculate total wealth in GRP equivalent using DB exchange rates"""
+    total = 0
+    
+    # Get exchange rates from database
+    rates_doc = await db.exchange_rates.find_one({"id": "exchange_matrix"}, {"_id": 0})
+    rates = rates_doc.get("rates", {}) if rates_doc else {}
+    
+    exchange_rates = {
+        "GRP": 1.0,
+        "NIM": rates.get("NIM_TO_GRP", 0.62267),
+        "VDD": rates.get("VDD_TO_GRP", 0.41909),
+        "KKD": rates.get("KKD_TO_GRP", 0.43791),
+        "EGD": rates.get("EGD_TO_GRP", 0.00847),
+        "EP": rates.get("EP_TO_GRP", 0.008888)
     }
     
     for bank_account in account.get("bank_accounts", []):
