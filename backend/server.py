@@ -372,22 +372,51 @@ DEFAULT_COUNTRIES = [
 
 # New stocks to add
 NEW_STOCKS = [
-    # NIM stocks
-    {"symbol": "NIM-IMPERIAL-IND", "name": "Imperial Industry Office", "currency": "NIM", "current_price": 10.00},
-    {"symbol": "NIM-IMPERIAL-TRADE", "name": "Imperial Trade Office", "currency": "NIM", "current_price": 2.55},
-    # VDD stocks
-    {"symbol": "VDD-JOINT-BANK", "name": "Veltronia Joint Banking", "currency": "VDD", "current_price": 3.33},
-    {"symbol": "VDD-TRADE-OFFICE", "name": "Veltronia Trade Office", "currency": "VDD", "current_price": 1.20},
-    # KKD stocks
-    {"symbol": "KKD-IND-OFFICE", "name": "Lost Kingdom Industry Office", "currency": "KKD", "current_price": 23.50},
-    {"symbol": "KKD-TRADE-OFFICE", "name": "Lost Kingdom Trade Office", "currency": "KKD", "current_price": 4.52},
+    # GRP Stocks
+    {"symbol": "GRP-GERMANIA-GOV", "name": "GERMANIA GOVERNMENT", "currency": "GRP", "current_price": 351.19, "type": "stock"},
+    {"symbol": "GRP-BOSO", "name": "Baweryen Organize Sanayi Odası BOSO", "currency": "GRP", "current_price": 195.73, "type": "stock"},
+    {"symbol": "GRP-BAWERYAN", "name": "Baweryan City", "currency": "GRP", "current_price": 235.05, "type": "stock"},
+    {"symbol": "GRP-GERMANIA-BANK", "name": "Germania Bankası", "currency": "GRP", "current_price": 200.74, "type": "stock"},
+    {"symbol": "GRP-HAZINE", "name": "Germania Hazine Bonosu", "currency": "GRP", "current_price": 0.10, "type": "bond"},
+    
+    # NIM Stocks
+    {"symbol": "NIM-GOV-NE", "name": "Government of NE", "currency": "NIM", "current_price": 241.49, "type": "stock"},
+    {"symbol": "NIM-FALCO", "name": "Falco", "currency": "NIM", "current_price": 215.02, "type": "stock"},
+    {"symbol": "NIM-BIGPORT", "name": "BIGPORT", "currency": "NIM", "current_price": 44.14, "type": "stock"},
+    {"symbol": "NIM-DELTA", "name": "Delta Air Port", "currency": "NIM", "current_price": 22.03, "type": "stock"},
+    {"symbol": "NIM-ANKARA", "name": "Ankara City", "currency": "NIM", "current_price": 5.57, "type": "stock"},
+    {"symbol": "NIM-PORTMETRO", "name": "PortMetro", "currency": "NIM", "current_price": 2.18, "type": "stock"},
+    {"symbol": "NIM-SAKURA", "name": "SakuraBank", "currency": "NIM", "current_price": 62.05, "type": "stock"},
+    {"symbol": "NIM-ARDAX", "name": "ArdaX Builds", "currency": "NIM", "current_price": 14.12, "type": "stock"},
+    {"symbol": "NIM-MBUILDS", "name": "Mbuilds", "currency": "NIM", "current_price": 22.21, "type": "stock"},
+    {"symbol": "NIM-HAZINE", "name": "Nazi Imparatorluğu Hazine Bonosu", "currency": "NIM", "current_price": 0.10, "type": "bond"},
+    {"symbol": "NIM-IMPERIAL-IND", "name": "Imperial Industry Office", "currency": "NIM", "current_price": 36.22, "type": "stock"},
+    {"symbol": "NIM-IMPERIAL-TRADE", "name": "Imperial Trade Office", "currency": "NIM", "current_price": 2.55, "type": "stock"},
+    
+    # KKD Stocks
+    {"symbol": "KKD-GOV-ERENIUM", "name": "GOVERMENT OF ERENIUM", "currency": "KKD", "current_price": 85.95, "type": "stock"},
+    {"symbol": "KKD-CORDOBA", "name": "Cordoba", "currency": "KKD", "current_price": 183.56, "type": "stock"},
+    {"symbol": "KKD-CORDOBA-BANK", "name": "Cordoba Bank", "currency": "KKD", "current_price": 23.70, "type": "stock"},
+    {"symbol": "KKD-FBUILD", "name": "F-Build", "currency": "KKD", "current_price": 16.01, "type": "stock"},
+    {"symbol": "KKD-HAZINE", "name": "Kayip Kredik Hazine Bonosu", "currency": "KKD", "current_price": 0.10, "type": "bond"},
+    {"symbol": "KKD-IND-OFFICE", "name": "Lost Kingdom Industry Office", "currency": "KKD", "current_price": 23.55, "type": "stock"},
+    {"symbol": "KKD-TRADE-OFFICE", "name": "Lost Kingdom Trade Office", "currency": "KKD", "current_price": 6.12, "type": "stock"},
+    
+    # VDD Stocks
+    {"symbol": "VDD-BERLIN-GOV", "name": "Berlin Government", "currency": "VDD", "current_price": 105.95, "type": "stock"},
+    {"symbol": "VDD-ELCIILIK", "name": "Elçilik", "currency": "VDD", "current_price": 3.41, "type": "stock"},
+    {"symbol": "VDD-BERLINS", "name": "BerlinsBuilds", "currency": "VDD", "current_price": 7.42, "type": "stock"},
+    {"symbol": "VDD-HAZINE", "name": "Berlin Konfederasyonu Hazine Bonosu", "currency": "VDD", "current_price": 0.10, "type": "bond"},
+    {"symbol": "VDD-JOINT-BANK", "name": "Veltronia Joint Banking", "currency": "VDD", "current_price": 3.33, "type": "stock"},
+    {"symbol": "VDD-TRADE-OFFICE", "name": "Veltronia Trade Office", "currency": "VDD", "current_price": 1.20, "type": "stock"},
+    
     # EGD stocks
-    {"symbol": "EGD-GOV", "name": "Egoslavia Government", "currency": "EGD", "current_price": 100.00},
-    {"symbol": "EGD-MINISTRY", "name": "Egoslavia Ministry Office", "currency": "EGD", "current_price": 3.50},
-    {"symbol": "EGD-SUMERBANK", "name": "SümerBank", "currency": "EGD", "current_price": 5.00},
-    {"symbol": "EGD-MXBUILD", "name": "MX Build", "currency": "EGD", "current_price": 5.00},
-    {"symbol": "EGD-EGBUILD", "name": "EG Build", "currency": "EGD", "current_price": 1.00},
-    {"symbol": "EGD-HAZINE", "name": "Egoslavia Treasury Bond", "currency": "EGD", "current_price": 0.10}
+    {"symbol": "EGD-GOV", "name": "Egoslavia Government", "currency": "EGD", "current_price": 100.00, "type": "stock"},
+    {"symbol": "EGD-MINISTRY", "name": "Egoslavia Ministry Office", "currency": "EGD", "current_price": 3.50, "type": "stock"},
+    {"symbol": "EGD-SUMERBANK", "name": "SümerBank", "currency": "EGD", "current_price": 5.00, "type": "stock"},
+    {"symbol": "EGD-MXBUILD", "name": "MX Build", "currency": "EGD", "current_price": 5.00, "type": "stock"},
+    {"symbol": "EGD-EGBUILD", "name": "EG Build", "currency": "EGD", "current_price": 1.00, "type": "stock"},
+    {"symbol": "EGD-HAZINE", "name": "Egoslavia Treasury Bond", "currency": "EGD", "current_price": 0.10, "type": "bond"}
 ]
 
 # Rank prices
