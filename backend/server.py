@@ -4759,9 +4759,9 @@ async def get_all_accounts():
     """Get all server accounts with wealth ranking"""
     accounts = await db.server_accounts.find({}, {"_id": 0}).to_list(1000)
     
-    # Calculate wealth for each account
+    # Calculate wealth for each account using async method
     for account in accounts:
-        account["total_wealth"] = calculate_total_wealth(account)
+        account["total_wealth"] = await calculate_total_wealth_async(account)
     
     # Sort by wealth (descending)
     accounts.sort(key=lambda x: x.get("total_wealth", 0), reverse=True)
@@ -4779,7 +4779,7 @@ async def get_account(account_id: str):
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    account["total_wealth"] = calculate_total_wealth(account)
+    account["total_wealth"] = await calculate_total_wealth_async(account)
     return account
 
 @api_router.get("/accounts/by-username/{username}")
@@ -4792,7 +4792,7 @@ async def get_account_by_username(username: str):
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    account["total_wealth"] = calculate_total_wealth(account)
+    account["total_wealth"] = await calculate_total_wealth_async(account)
     return account
 
 @api_router.post("/admin/accounts")
