@@ -701,6 +701,7 @@ class StockCreate(BaseModel):
     name: str
     currency: str
     current_price: float
+    type: str = "stock"  # stock or bond
 
 class StockNameUpdate(BaseModel):
     symbol: str
